@@ -4,12 +4,6 @@ spring:
   profiles:
     active: local
 
-  mvc:
-    throw-exception-if-no-handler-found: true
-    web:
-      resources:
-        add-mappings: false
-
   # 기본(Primary) 데이터소스: MySQL
   datasource:
     url: jdbc:mysql://localhost:3306/dicom_app?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
