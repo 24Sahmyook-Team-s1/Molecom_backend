@@ -1,0 +1,80 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.4'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.pacs'
+version = '0.0.1-SNAPSHOT'
+description = '3rd projects for mole'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+    maven { url = uri("https://www.dcm4che.org/maven2") }
+}
+
+ext {
+    jjwtVersion = '0.12.7'   // JWT
+    jcifsNg     = '2.1.10'   // CIFS/SMB
+    dcm4che     = '5.34.0'   // DICOM 유틸
+    springdocUi = '2.8.9'    // Swagger UI
+
+    // DB 드라이버 버전 (동시 사용)
+    mysqlDriver = '9.4.0'            // mysql-connector-j
+    oracleJdbc  = '23.9.0.25.07'     // ojdbc11 (JDK 11/17/21 호환)
+}
+
+dependencies {
+    // JPA & DB
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly   "com.mysql:mysql-connector-j:${mysqlDriver}"   // MySQL
+    runtimeOnly   "com.oracle.database.jdbc:ojdbc11:${oracleJdbc}" // Oracle
+
+    // Security & JWT
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    runtimeOnly   "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    runtimeOnly   "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
+    // Web & JSON
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // WebClient (Orthanc DICOMweb 호출용)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // CIFS/SMB 인제스터
+    implementation "eu.agno3.jcifs:jcifs-ng:${jcifsNg}"
+
+    // DICOM 유틸 (태그 파싱 등)
+    //implementation "org.dcm4che:dcm4che-core:${dcm4che}"
+    //implementation "org.dcm4che:dcm4che-imageio:${dcm4che}"
+
+    // Swagger UI
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocUi}"
+
+    // Lombok & Dev
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
