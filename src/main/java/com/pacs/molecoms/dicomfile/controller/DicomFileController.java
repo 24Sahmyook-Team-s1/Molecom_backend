@@ -48,6 +48,10 @@ public class DicomFileController {
                 .headers(h -> h.setContentDisposition(
                         ContentDisposition.inline().filename(fname, StandardCharsets.UTF_8).build()
                 ))
+                // 다운로드 링크 걸기
+                // .headers(h -> h.setContentDisposition(
+                //        ContentDisposition.attachment().filename(fname, StandardCharsets.UTF_8).build()
+                //))
                 .body(body);
 
     }
