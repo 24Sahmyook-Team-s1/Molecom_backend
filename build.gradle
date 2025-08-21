@@ -26,7 +26,7 @@ repositories {
 }
 
 ext {
-    jjwtVersion = '0.12.7'   // JWT
+    jjwtVersion = '0.11.5'   // JWT
     jcifsNg     = '2.1.10'   // CIFS/SMB
     dcm4che     = '5.34.0'   // DICOM 유틸
     springdocUi = '2.8.9'    // Swagger UI
