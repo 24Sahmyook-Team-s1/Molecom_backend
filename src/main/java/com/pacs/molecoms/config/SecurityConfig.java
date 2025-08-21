@@ -52,7 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/internal/ingest/**").hasRole("SERVICE")
                         // OHIF 정적 파일/프론트 리버스 프록시 경로가 있으면 허용
                         //.requestMatchers("/viewer/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(entryPoint)

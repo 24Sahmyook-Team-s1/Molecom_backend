@@ -50,14 +50,21 @@ app:
       cors:
         allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
 
+cifs:
+  # 공유 루트. 예: smb://fileserver/dicom  또는  //fileserver/dicom (자동 보정됨)
+  base-url: smb://210.94.241.9/sts
+  domain:         # AD 도메인 없으면 비워도 됨
+  username: ${CIFS_USER:syu}
+  password: ${CIFS_PASS:1}
+
+
 server:
   port: 8080
 
 logging:
   level:
-    root: INFO
-    org.hibernate.SQL: INFO
-    org.hibernate.orm.jdbc.bind: INFO
+    org.apache.catalina.connector.OutputBuffer: ERROR
+    org.apache.catalina.core: ERROR
 
 springdoc:
   api-docs.enabled: true
