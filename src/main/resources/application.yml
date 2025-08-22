@@ -4,7 +4,7 @@ spring:
   profiles:
     active: local
 
-  # 기본(Primary) 데이터소스: MySQL
+  # ✅ 기본(Primary) 데이터소스: MySQL
   datasource:
     url: jdbc:mysql://localhost:3306/dicom_app?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
     username: ${MYSQL_USERNAME:dev}
@@ -16,17 +16,16 @@ spring:
 
   jpa:
     open-in-view: false
-    # 기본 EMF(MySQL)에 적용
     hibernate:
-      ddl-auto: validate        # 로컬은 update 가능
+      ddl-auto: validate         # 로컬 환경에서는 update 가능
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect  # 생략 가능(드라이버로 자동 유추)
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         jdbc.time_zone: Asia/Seoul
     show-sql: false
 
-# 보조 데이터소스: Oracle (커스텀 prefix)
+# ✅ 보조 데이터소스: Oracle
 app:
   datasource:
     oracle:
@@ -44,23 +43,29 @@ app:
       properties:
         hibernate.dialect: org.hibernate.dialect.OracleDialect
 
-  jwt:
-    secret: ${JWT_SECRET:change-me-change-me-change-me-change}  # 32바이트 이상
-    security:
-      cors:
-        allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
+# ✅ JWT 설정 (최상위 레벨)
+jwt:
+  secret: ${JWT_SECRET:change-me-change-me-change-me-change}   # 32바이트 이상 필수
+  expiration: 3600000   # (예시) 토큰 만료 시간: 1시간 (ms)
+  security:
+    cors:
+      allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
 
+# ✅ 서버 설정
 server:
   port: 8080
 
+# ✅ 로깅 설정
 logging:
   level:
     root: INFO
     org.hibernate.SQL: INFO
     org.hibernate.orm.jdbc.bind: INFO
 
+# ✅ Swagger / Springdoc 설정
 springdoc:
-  api-docs.enabled: true
+  api-docs:
+    enabled: true
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
