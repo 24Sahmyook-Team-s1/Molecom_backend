@@ -28,9 +28,6 @@ public class User {
     @Column
     private String password;
 
-    @Column
-    private String provider;
-
     @Column(length=100)
     private String dept;
 
