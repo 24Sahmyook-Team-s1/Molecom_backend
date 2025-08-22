@@ -62,4 +62,12 @@ public class UserController {
         service.deleteSoft(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "유저 삭제(하드)")
+    @DeleteMapping("/{id}/Hard")
+    public ResponseEntity<Void> deletedelete(@PathVariable Long id) {
+        service.deleteHard(id);
+        return ResponseEntity.noContent().build();
+    }
 }

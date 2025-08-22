@@ -62,6 +62,14 @@ public class UserService {
         u.setStatus(UserStatus.DELETED);
     }
 
+    @Transactional
+    public void deleteHard(Long id) {
+        User u = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+//        u.setStatus(UserStatus.DELETED);
+        userRepository.delete(u);
+    }
+
     private UserRes toRes(User u) {
         return new UserRes(
                 u.getId(), u.getEmail(), u.getDisplayName(), u.getDept(),
