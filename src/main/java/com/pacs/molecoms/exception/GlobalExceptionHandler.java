@@ -2,6 +2,7 @@ package com.pacs.molecoms.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,10 +19,30 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private <T> ResponseEntity<T> json(HttpStatusCode status, T body) {
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
+    }
+
+    private Map<String, String> toDetail(FieldError fe) {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("field", fe.getField());
+        m.put("rejected", String.valueOf(fe.getRejectedValue()));
+        m.put("reason", Optional.ofNullable(fe.getDefaultMessage()).orElse("invalid"));
+        return m;
+    }
+
+    private String traceId() {
+        // MDC 연동 시 MDC.get("traceId") 사용 가능
+        return UUID.randomUUID().toString(); // 절대 null 반환하지 않기
+    }
 
     // ====== @Valid 바디 검증 실패 ======
     @Override
@@ -30,19 +51,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             MethodArgumentNotValidException ex, @NonNull HttpHeaders headers,
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
-        List<Map<String,String>> details = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::toDetail).toList();
+        var details = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::toDetail).collect(Collectors.toList());
 
-        var body = ErrorResponse.of(ErrorCode.VALIDATION_ERROR, ErrorCode.VALIDATION_ERROR.getDefaultMessage(), details, traceId());
-        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.getStatus()).body(body);
-    }
-
-    private Map<String,String> toDetail(FieldError fe) {
-        return Map.of(
-                "field", fe.getField(),
-                "rejected", String.valueOf(fe.getRejectedValue()),
-                "reason", Optional.ofNullable(fe.getDefaultMessage()).orElse("invalid")
-        );
+        var body = ErrorResponse.of(ErrorCode.VALIDATION_ERROR,
+                ErrorCode.VALIDATION_ERROR.getDefaultMessage(), details, traceId());
+        return json(ErrorCode.VALIDATION_ERROR.getStatus(), body);
     }
 
     // ====== @RequestParam 등 누락 ======
@@ -53,7 +67,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
         var body = ErrorResponse.of(ErrorCode.BAD_REQUEST, ex.getMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.BAD_REQUEST.getStatus()).body(body);
+        return json(ErrorCode.BAD_REQUEST.getStatus(), body);
     }
 
     // ====== 잘못된 JSON, 파싱 불가 ======
@@ -64,10 +78,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
         var body = ErrorResponse.of(ErrorCode.BAD_REQUEST, "본문을 읽을 수 없습니다.", List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.BAD_REQUEST.getStatus()).body(body);
+        return json(ErrorCode.BAD_REQUEST.getStatus(), body);
     }
 
-    // ====== 404 (설정 필요, 아래 yml 참고) ======
+    // ====== 404 (yml 설정 필요 시 하단 참고) ======
     @Override
     @NonNull
     protected ResponseEntity<Object> handleNoHandlerFoundException(
@@ -75,7 +89,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
         var body = ErrorResponse.of(ErrorCode.NOT_FOUND, "요청 경로를 찾을 수 없습니다.", List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.NOT_FOUND.getStatus()).body(body);
+        return json(ErrorCode.NOT_FOUND.getStatus(), body);
     }
 
     // ====== 405 ======
@@ -86,7 +100,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
         var body = ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, ex.getMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.METHOD_NOT_ALLOWED.getStatus()).body(body);
+        return json(ErrorCode.METHOD_NOT_ALLOWED.getStatus(), body);
     }
 
     // ====== 415 ======
@@ -97,32 +111,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 
         var body = ErrorResponse.of(ErrorCode.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.UNSUPPORTED_MEDIA_TYPE.getStatus()).body(body);
+        return json(ErrorCode.UNSUPPORTED_MEDIA_TYPE.getStatus(), body);
     }
 
     // ====== JSR-303 파라미터 검증(@Validated) ======
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         List<Map<String,String>> details = ex.getConstraintViolations().stream()
-                .map(v -> Map.of("field", v.getPropertyPath().toString(), "reason", v.getMessage()))
-                .toList();
-        var body = ErrorResponse.of(ErrorCode.VALIDATION_ERROR, ErrorCode.VALIDATION_ERROR.getDefaultMessage(), details, traceId());
-        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.getStatus()).body(body);
+                .map(v -> {
+                    Map<String,String> m = new LinkedHashMap<>();
+                    m.put("field", v.getPropertyPath().toString());
+                    m.put("reason", v.getMessage());
+                    return m;
+                }).toList();
+        var body = ErrorResponse.of(ErrorCode.VALIDATION_ERROR,
+                ErrorCode.VALIDATION_ERROR.getDefaultMessage(), details, traceId());
+        return json(ErrorCode.VALIDATION_ERROR.getStatus(), body);
     }
 
     // ====== 데이터 무결성 위반 ======
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation", ex);
-        var body = ErrorResponse.of(ErrorCode.DATA_INTEGRITY_VIOLATION, ErrorCode.DATA_INTEGRITY_VIOLATION.getDefaultMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.DATA_INTEGRITY_VIOLATION.getStatus()).body(body);
+        var body = ErrorResponse.of(ErrorCode.DATA_INTEGRITY_VIOLATION,
+                ErrorCode.DATA_INTEGRITY_VIOLATION.getDefaultMessage(), List.of(), traceId());
+        return json(ErrorCode.DATA_INTEGRITY_VIOLATION.getStatus(), body);
     }
 
     // ====== 엔티티 없음 ======
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex) {
         var body = ErrorResponse.of(ErrorCode.NOT_FOUND, ex.getMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.NOT_FOUND.getStatus()).body(body);
+        return json(ErrorCode.NOT_FOUND.getStatus(), body);
     }
 
     // ====== 도메인 커스텀 예외 ======
@@ -130,20 +150,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMolecoms(MolecomsException ex) {
         var code = ex.getErrorCode();
         var body = ErrorResponse.of(code, ex.getMessage(), List.of(), traceId());
-        return ResponseEntity.status(code.getStatus()).body(body);
+        return json(code.getStatus(), body);
+    }
+
+    // ====== 클라이언트가 스트리밍 중단 ======
+    @ExceptionHandler(ClientAbortException.class)
+    public ResponseEntity<Void> handleClientAbort(ClientAbortException ex) {
+        return ResponseEntity.noContent().build(); // 조용히 종료
     }
 
     // ====== 마지막 안전망 ======
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleEtc(Exception ex) {
         log.error("Unhandled exception", ex);
-        var body = ErrorResponse.of(ErrorCode.INTERNAL_ERROR, ErrorCode.INTERNAL_ERROR.getDefaultMessage(), List.of(), traceId());
-        return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getStatus()).body(body);
-    }
-
-    private String traceId() {
-        // 필요하면 MDC에서 가져오기 (예: Sleuth/Logback MDC 연동)
-        // return MDC.get("traceId");
-        return null;
+        var body = ErrorResponse.of(ErrorCode.INTERNAL_ERROR,
+                ErrorCode.INTERNAL_ERROR.getDefaultMessage(), List.of(), traceId());
+        return json(ErrorCode.INTERNAL_ERROR.getStatus(), body);
     }
 }

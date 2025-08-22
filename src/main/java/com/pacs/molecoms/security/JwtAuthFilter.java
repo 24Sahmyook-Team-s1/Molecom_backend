@@ -1,59 +1,90 @@
 // src/main/java/com/pacs/molecoms/security/JwtAuthFilter.java
 package com.pacs.molecoms.security;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
+@RequiredArgsConstructor
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-
-    public JwtAuthFilter(JwtUtil jwtUtil) { this.jwtUtil = jwtUtil; }
+    private final CustomUserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        String auth = req.getHeader("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            String token = auth.substring(7);
-            try {
-                Claims claims = jwtUtil.parseClaims(token);
-                String username = claims.getSubject();
+        String token = null;
 
-                // roles 클레임을 ["ROLE_..."] 또는 ["..."] 둘 다 허용
-                Object rolesObj = claims.get("roles");
-                List<String> roles = new ArrayList<>();
-                if (rolesObj instanceof Collection<?> c) {
-                    for (Object o : c) roles.add(String.valueOf(o));
-                } else if (rolesObj instanceof String s) {
-                    roles = Arrays.stream(s.split(",")).map(String::trim).toList();
+        // ✅ 1. Authorization 헤더에서 꺼내기
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            token = bearerToken.substring(7);
+        }
+
+        // ✅ 2. 없으면 쿠키에서 accessToken 꺼내기
+        if (token == null && request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
                 }
-
-                var authorities = roles.stream()
-                        .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
-
-                var authToken = new UsernamePasswordAuthenticationToken(username, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            } catch (Exception e) {
-                // 토큰이 없거나 잘못되면 그냥 익명으로 진행 → 엔드포인트에서 401/403 처리
-                SecurityContextHolder.clearContext();
             }
         }
-        chain.doFilter(req, res);
+
+        System.out.println("\n\n🛡️ JwtAuthenticationFilter 진입");
+        System.out.println("🛡️ 요청 URI: " + request.getRequestURI());
+        System.out.println("🛡️ 추출된 토큰: " + token + "\n");
+
+        // ✅ 3. 토큰 검증 및 사용자 인증 설정
+        if (token != null && jwtUtil.validateToken(token)
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                String userId = jwtUtil.getUserIdFromToken(token); // email:provider
+                System.out.println("🛡️ 사용자 ID: " + userId);
+
+                CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(userId);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            } catch (Exception e) {
+                System.out.println("❌ JWT 인증 처리 실패: " + e.getMessage());
+                e.printStackTrace();  // ✅ 오류 추적 로그
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        return path.startsWith("/swagger")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")
+                || path.equals("/api/auth/login")
+                || path.equals("/api/auth/signup")
+                || path.equals("/api/auth/logout");  // ✅ "/api/auth/me" 절대 금지!
     }
 }
