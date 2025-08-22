@@ -1,6 +1,6 @@
-package com.pacs.molecoms.domain.repository;
+package com.pacs.molecoms.mysql.repository;
 
-import com.pacs.molecoms.domain.entity.User;
+import com.pacs.molecoms.mysql.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,13 +1,11 @@
-package com.pacs.molecoms.domain.entity;
+package com.pacs.molecoms.mysql.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(
-        name = "user",
+        name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"email", "provider"})
         }

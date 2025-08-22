@@ -1,7 +1,7 @@
 package com.pacs.molecoms.security;
 
-import com.pacs.molecoms.domain.entity.User;
-import com.pacs.molecoms.domain.repository.UserRepository;
+import com.pacs.molecoms.mysql.entity.User;
+import com.pacs.molecoms.mysql.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

@@ -26,7 +26,7 @@ public class MysqlJpaConfig {
 
     @Bean
     @Primary
-    @ConfigurationProperties("spring.datasource.mysql")
+    @ConfigurationProperties("spring.datasource")
     public DataSource mysqlDataSource() {
         return DataSourceBuilder.create().build();
     }

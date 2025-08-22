@@ -1,6 +1,6 @@
 package com.pacs.molecoms.security;
 
-import com.pacs.molecoms.domain.entity.User;
+import com.pacs.molecoms.mysql.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
