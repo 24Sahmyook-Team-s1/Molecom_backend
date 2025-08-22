@@ -11,9 +11,9 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
-    boolean existsByEmailAndProvider(String email, String provider);
+//    boolean existsByEmailAndProvider(String email, String provider);
     Optional<User> findByEmail(String email);
-    Optional<User> findByEmailAndProvider(String email, String provider); // ✅ 추가됨
+//    Optional<User> findByEmailAndProvider(String email, String provider); // ✅ 추가됨
     List<User> findByDeptOrderByDisplayNameAsc(String dept);
     Page<User> findAllByStatus(UserStatus status, Pageable pageable);
 }
