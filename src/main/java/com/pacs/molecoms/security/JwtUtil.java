@@ -1,6 +1,7 @@
 // src/main/java/com/pacs/molecoms/security/JwtUtil.java
 package com.pacs.molecoms.security;
 
+import com.pacs.molecoms.mysql.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.security.Key;
 
@@ -35,26 +38,34 @@ public class JwtUtil {
         System.out.println("✅ JwtUtil 초기화 완료 (key ready)");
     }
 
-    public String generateAccessToken(String email, String provider) {
+    public String generateAccessToken(User user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + ACCESS_EXPIRATION);
 
-        String subject = email + ":" + provider;
+        String email = user.getEmail();
+        String role = user.getRole().name();
+
+        String subject = email + ":" + role;
         System.out.println("🔐 accessToken 생성 → subject: " + subject);
 
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(now)
+                .setSubject(email)
+                .claim("uid", user.getId())            // ★ 본인 판별용
+                .claim("role", role)  // 권한
+                .setIssuedAt(new Date())
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String generateRefreshToken(String email, String provider) {
+    public String generateRefreshToken(User user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + REFRESH_EXPIRATION);
 
-        String subject = email + ":" + provider;
+        String email = user.getEmail();
+        String role = user.getRole().name();
+
+        String subject = email + ":" + role;
         System.out.println("🔐 refreshToken 생성 → subject: " + subject);
 
         return Jwts.builder()

@@ -2,41 +2,47 @@ package com.pacs.molecoms.mysql.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
+
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
 @Entity
 @Table(
         name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"email", "provider"})
-        }
+        uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
+        indexes = @Index(name = "idx_users_dept", columnList = "dept")
 )
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class User {
 
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable=false, length=255)
     private String email;
 
+    @Column(name="display_name", nullable=false, length=100)
+    private String displayName;
+
+    @Column
     private String password;
 
-    private String nickname;
-
+    @Column
     private String provider;
 
-    // ✅ ChatRoom 연관관계 추가
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<ChatRoom> chatRooms = new ArrayList<>();
-//
-//    public void changePassword(String encodedPassword) {
-//        this.password = encodedPassword;
-//    }
-//
-//    public void changeNickname(String newNickname) {
-//        this.nickname = newNickname;
-//    }
+    @Column(length=100)
+    private String dept;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=20)
+    private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=20)
+    private UserStatus status;
+
+    @CreationTimestamp
+    @Column(name="created_at", nullable=false, updatable=false)
+    private LocalDateTime createdAt;
 }
