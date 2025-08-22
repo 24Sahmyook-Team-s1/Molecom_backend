@@ -16,15 +16,14 @@ spring:
 
   jpa:
     open-in-view: false
-    # 기본 EMF(MySQL)에 적용
     hibernate:
-      ddl-auto: update        # 로컬은 update 가능
+      ddl-auto: update        # 로컬에서는 update 권장, 처음 테스트는 create로 확인 가능
+    show-sql: true            # 실행되는 SQL 로그 확인
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect  # 생략 가능(드라이버로 자동 유추)
+        dialect: org.hibernate.dialect.MySQL8Dialect  # MySQL8 기준 (버전에 맞게 지정)
         format_sql: true
         jdbc.time_zone: Asia/Seoul
-    show-sql: false
 
 # 보조 데이터소스: Oracle (커스텀 prefix)
 app:
@@ -45,18 +44,16 @@ app:
         hibernate.dialect: org.hibernate.dialect.OracleDialect
 
 jwt:
-    secret: ${JWT_SECRET:fd471a4de6ec54a281f66c51c264a2e7}  # 32바이트 이상
-    security:
-      cors:
-        allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
+  secret: ${JWT_SECRET:fd471a4de6ec54a281f66c51c264a2e7}  # 32바이트 이상
+  security:
+    cors:
+      allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
 
 cifs:
-  # 공유 루트. 예: smb://fileserver/dicom  또는  //fileserver/dicom (자동 보정됨)
   base-url: smb://210.94.241.9/sts
   domain:         # AD 도메인 없으면 비워도 됨
   username: ${CIFS_USER:syu}
   password: ${CIFS_PASS:1}
-
 
 server:
   port: 8080
