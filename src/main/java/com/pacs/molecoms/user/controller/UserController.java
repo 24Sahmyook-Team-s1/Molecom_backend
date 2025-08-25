@@ -4,6 +4,7 @@ import com.pacs.molecoms.mysql.entity.UserStatus;
 import com.pacs.molecoms.user.dto.*;
 import com.pacs.molecoms.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -70,4 +71,12 @@ public class UserController {
         service.deleteHard(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "로그인")
+    @PostMapping("/login")
+    public ResponseEntity<AuthRes> login(@RequestBody LoginReq request, HttpServletResponse response) {
+        AuthRes authRes = service.login(request, response);
+        return ResponseEntity.ok(authRes);
+    }
+
 }

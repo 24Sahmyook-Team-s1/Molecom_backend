@@ -1,11 +1,17 @@
 package com.pacs.molecoms.user.service;
 
+import com.pacs.molecoms.exception.ErrorCode;
+import com.pacs.molecoms.exception.MolecomsException;
 import com.pacs.molecoms.mysql.entity.*;
 import com.pacs.molecoms.mysql.repository.UserRepository;
+import com.pacs.molecoms.security.CookieUtil;
+import com.pacs.molecoms.security.JwtUtil;
 import com.pacs.molecoms.user.dto.*;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+    private final CookieUtil cookieUtil;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserRes create(UserCreateReq req) {
@@ -75,5 +84,24 @@ public class UserService {
                 u.getId(), u.getEmail(), u.getDisplayName(), u.getDept(),
                 u.getRole(), u.getStatus(), u.getCreatedAt()
         );
+    }
+
+    //로그인
+    public AuthRes login(LoginReq request, HttpServletResponse response) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
+
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new MolecomsException(ErrorCode.PASSWORD_FAIL);
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+
+        AuthRes authResponse=  new AuthRes(accessToken, refreshToken);
+        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), true);
+        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), true);
+        return authResponse;
     }
 }
