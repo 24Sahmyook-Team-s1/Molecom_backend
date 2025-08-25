@@ -1,17 +1,22 @@
 package com.pacs.molecoms.dicomfile.controller;
 
+import com.pacs.molecoms.dicomfile.dto.StudySummaryDto;
 import com.pacs.molecoms.dicomfile.service.DicomFileFetchService;
+import com.pacs.molecoms.dicomfile.service.OracleStudyReadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequestMapping("/dicom")
@@ -19,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 public class DicomFileController {
 
     private final DicomFileFetchService fetchService;
+    private final OracleStudyReadService studyService;
 
     @Operation(summary = "DICOM 스트리밍")
     @ApiResponse(responseCode = "200", description = "OK",
@@ -55,6 +61,16 @@ public class DicomFileController {
                 .headers(h -> h.setContentDisposition(
                         ContentDisposition.inline().filename(fname, java.nio.charset.StandardCharsets.UTF_8).build()))
                 .body(body);
+    }
+
+
+    @Operation(summary = "환자 UID LIKE 검색으로 STUDY 목록 조회 (Oracle, 읽기 전용)")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('READ_STUDY')")
+    @GetMapping("/patients/studies")
+    public ResponseEntity<List<StudySummaryDto>> listStudiesByPatientUidLike(
+            @RequestParam("pid") @NotBlank String pidPart
+    ) {
+        return ResponseEntity.ok(studyService.findStudiesByPatientUidLike(pidPart));
     }
 
 }
