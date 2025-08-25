@@ -24,8 +24,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         String email = parts[0];
         String provider = parts[1];
 
-        User user = userRepository.findByEmailAndProvider(email, provider)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일을 찾을 수 없습니다: " + identifier));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+//        User user = userRepository.findByEmailAndProvider(email, provider)
+//                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일을 찾을 수 없습니다: " + identifier));
 
         return new CustomUserDetails(user);
     }
