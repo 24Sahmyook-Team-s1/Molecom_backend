@@ -4,6 +4,7 @@ import com.pacs.molecoms.mysql.entity.UserStatus;
 import com.pacs.molecoms.user.dto.*;
 import com.pacs.molecoms.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +78,15 @@ public class UserController {
     public ResponseEntity<AuthRes> login(@RequestBody LoginReq request, HttpServletResponse response) {
         AuthRes authRes = service.login(request, response);
         return ResponseEntity.ok(authRes);
+    }
+
+    @Operation(summary = "로그아웃")
+    @PostMapping(value = "/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        service.logout(request, response);
+//        cookieUtil.clearJwtCookie(response, "accessToken", IS_SECURE);
+//        cookieUtil.clearJwtCookie(response, "refreshToken", IS_SECURE);
+        return ResponseEntity.noContent().build();
     }
 
 }

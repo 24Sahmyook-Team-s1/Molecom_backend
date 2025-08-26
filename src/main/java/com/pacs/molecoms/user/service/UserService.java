@@ -3,11 +3,13 @@ package com.pacs.molecoms.user.service;
 import com.pacs.molecoms.exception.ErrorCode;
 import com.pacs.molecoms.exception.MolecomsException;
 import com.pacs.molecoms.mysql.entity.*;
+import com.pacs.molecoms.mysql.repository.SessionRepository;
 import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
 import com.pacs.molecoms.security.JwtUtil;
 import com.pacs.molecoms.user.dto.*;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -15,10 +17,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final PasswordEncoder passwordEncoder;
@@ -103,6 +108,30 @@ public class UserService {
         AuthRes authResponse=  new AuthRes(accessToken, refreshToken);
         cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), true);
         cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), true);
+
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
+
+        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().userId(user.getId()).build());
+//        Session s = Session.builder()
+//                .user_id(3L)
+//                .jwt_token(accessToken)
+//                .issued_at(now)
+//                .expires_at(expiry)
+//                .build();
+        s.setAccessToken(accessToken);
+        s.setIssued_at(now);
+        s.setExpires_at(expiry);
+
+        sessionRepository.save(s);
         return authResponse;
     }
+
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        Session s = sessionRepository.findByaccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        sessionRepository.delete(s);
+        cookieUtil.clearJwtCookie(response, "accessToken", true);
+        cookieUtil.clearJwtCookie(response, "refreshToken", true);
+    }
+
 }
