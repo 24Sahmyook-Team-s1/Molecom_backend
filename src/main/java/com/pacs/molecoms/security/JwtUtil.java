@@ -24,6 +24,10 @@ public class JwtUtil {
     private final long ACCESS_EXPIRATION = 1000 * 60 * 15 * 60;
     private final long REFRESH_EXPIRATION = 1000 * 60 * 60 * 24 * 7;
 
+    public long getACCESS_EXPIRATION() {
+        return ACCESS_EXPIRATION;
+    }
+
     public JwtUtil(@Value("${jwt.secret}") String secretKeyRaw) {
         this.secretKeyRaw = secretKeyRaw;
         if (this.secretKeyRaw == null || this.secretKeyRaw.isBlank()) {
