@@ -9,6 +9,7 @@ public record UserCreateReq(
         @NotBlank String displayName,
         String dept,
         @NotNull UserRole role,
-        @NotNull UserStatus status
+        @NotNull UserStatus status,
+        @NotBlank String passWord
 ) {}
 

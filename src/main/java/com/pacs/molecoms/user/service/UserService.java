@@ -34,6 +34,7 @@ public class UserService {
                 .dept(req.dept())
                 .role(req.role())
                 .status(req.status())
+                .password(passwordEncoder.encode(req.passWord()))
                 .build();
         userRepository.save(u);
         return toRes(u);
