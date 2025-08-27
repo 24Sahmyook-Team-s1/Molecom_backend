@@ -35,7 +35,7 @@ public class SecurityConfig {
             // 필요 시 로그인/회원가입 API 추가: "/api/auth/**"
     };
 
-    @Value("${app.security.cors.allowed-origins:http://localhost:5173}")
+    @Value("#{'${jwt.security.cors.allowed-origins}'.split(',')}")
     private List<String> allowedOrigins;
 
     @Bean

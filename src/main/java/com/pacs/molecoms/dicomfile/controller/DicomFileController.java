@@ -13,7 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/dicom")
+@RequestMapping("/api/dicom")
 @RequiredArgsConstructor
 public class DicomFileController {
 
@@ -26,7 +26,7 @@ public class DicomFileController {
                     schema = @Schema(type = "string", format = "binary")
             )
     )
-    @GetMapping("/dicom/studies/{studyKey}/series/{seriesKey}/images/{imageKey}/stream")
+    @GetMapping("/studies/{studyKey}/series/{seriesKey}/images/{imageKey}/stream")
     public ResponseEntity<StreamingResponseBody> stream(
             @PathVariable Long studyKey,
             @PathVariable Long seriesKey,
