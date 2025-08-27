@@ -81,10 +81,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         return path.startsWith("/swagger")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
-                || path.startsWith("/oauth2/")
-                || path.startsWith("/login/oauth2/")
-                || path.equals("/api/auth/login")
-                || path.equals("/api/auth/signup")
-                || path.equals("/api/auth/logout");  // ✅ "/api/auth/me" 절대 금지!
+                || path.equals("/api/users/login")
+                || path.equals("/api/users/signup")
+                || path.equals("/api/users/logout");  // ✅ "/api/auth/me" 절대 금지!
     }
 }
