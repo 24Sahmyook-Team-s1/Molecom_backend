@@ -1,8 +1,8 @@
-// com/pacs/molecoms/mysql/entity/Report.java
 package com.pacs.molecoms.mysql.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,18 +24,25 @@ public class Report {
     @Column(name = "series_key", nullable = false)
     private Long seriesKey;
 
-    @Column(name = "modality", nullable = false, length = 20)
+    @Column(name = "modality", nullable = false)
     private String modality;
 
-    @Column(name = "body_part", length = 50)
+    @Column(name = "body_part", nullable = false)
     private String bodyPart;
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    // ✅ study_uid NULL 허용
-    @Column(name = "study_uid", nullable = true, length = 255)
+    @Column(name = "study_uid", nullable = false)
     private String studyUid;
+
+    @Column(name = "patient_id", nullable = false)
+    private Long patientId;
+
+    // ✅ User와 연관관계 매핑
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

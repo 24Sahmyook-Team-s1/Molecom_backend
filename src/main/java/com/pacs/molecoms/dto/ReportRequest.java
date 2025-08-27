@@ -1,20 +1,17 @@
-// com/pacs/molecoms/dto/ReportRequest.java
 package com.pacs.molecoms.dto;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class ReportRequest {
     private Long studyKey;
     private Long seriesKey;
     private String modality;
     private String bodyPart;
     private String content;
-
-    // ✅ Swagger에서 optional
     private String studyUid;
+    private Long patientId;  // ✅ 추가
+    private Long authorId;   // ✅ 추가
 }
