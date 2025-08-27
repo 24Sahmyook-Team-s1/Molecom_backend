@@ -1,6 +1,11 @@
 package com.pacs.molecoms.user.controller;
 
-import com.pacs.molecoms.mysql.entity.UserStatus;
+import com.pacs.molecoms.exception.ErrorCode;
+import com.pacs.molecoms.exception.MolecomsException;
+import com.pacs.molecoms.log.dto.LogReq;
+import com.pacs.molecoms.log.service.LogService;
+import com.pacs.molecoms.mysql.entity.*;
+import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.user.dto.*;
 import com.pacs.molecoms.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService service;
+    private final UserRepository userRepository;
+    private final LogService logService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 생성")
@@ -77,6 +84,10 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<AuthRes> login(@RequestBody LoginReq request, HttpServletResponse response) {
         AuthRes authRes = service.login(request, response);
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
+        LogReq logReq = new LogReq(user, DBlist.USERS, LogAction.SELECT);
+        logService.saveLog(logReq);
         return ResponseEntity.ok(authRes);
     }
 

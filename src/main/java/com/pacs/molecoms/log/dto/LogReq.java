@@ -5,9 +5,9 @@ import com.pacs.molecoms.mysql.entity.LogAction;
 import com.pacs.molecoms.mysql.entity.User;
 
 public record LogReq (
-    Long id,
+//    Long id,
     User user,
     DBlist db,
-    LogAction logAction,
-    java.time.LocalDateTime createdAt
+    LogAction logAction//,
+//    java.time.LocalDateTime createdAt
 ) {}

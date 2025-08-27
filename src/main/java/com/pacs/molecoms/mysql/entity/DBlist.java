@@ -1,5 +1,5 @@
 package com.pacs.molecoms.mysql.entity;
 
 public enum DBlist {
-    MYSQL, ORACLE
+    AUTH_SESSION, LOGS, USERS
 }
