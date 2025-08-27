@@ -115,7 +115,7 @@ public class UserService {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
 
-        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().userId(user.getId()).build());
+        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().user(user).build());
 //        Session s = Session.builder()
 //                .user_id(3L)
 //                .jwt_token(accessToken)
