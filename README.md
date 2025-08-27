@@ -69,15 +69,15 @@
 ---
 
 ### 🔹 MySQL (애플리케이션/인증/감사)
-- **usertab**: 사용자 계정 (이메일, 부서, 역할, 상태)
-- **authsessiontab**: JWT 세션 (발급/만료, IP, UserAgent)
-- **reporttab**: 판독 리포트 (studyinsuid FK, findings, impression)
-- **reporttemplatetab**: 리포트 템플릿 (name, bodymd, modality, 공유여부)
-- **notetab**: 협업 노트 (studyinsuid, authorid, bodymd)
-- **reviewrequesttab**: 검토 요청 (assignee, priority, status, dueat)
-- **auditaccesstab**: 접근 로그 (userid, action, objecttype, objectid, reasoncode, ts)
-- **auditerrortab**: 에러 로그 (level, code, message, stack, ts)
-- **dicomaimarktab**: AI 판독 결과 (studyinsuid, seriesinsuid, sopinstanceuid, label, bboxjson, score, source)
+- **users**: 사용자 계정 (사용자 id, 이메일, 비밀번호, 부서, 역할, 상태, 생성일, 이름)
+- **auth_session**: JWT 세션 (세션 id, accesstoken, 발급시간, 만료시간, 사용자 id)
+- **report**: 판독 리포트 (studyinsuid FK, findings, impression)
+- **reporttemplate**: 리포트 템플릿 (name, bodymd, modality, 공유여부)
+- **note**: 협업 노트 (studyinsuid, authorid, bodymd)
+- **reviewrequest**: 검토 요청 (assignee, priority, status, dueat)
+- **auditaccess**: 접근 로그 (userid, action, objecttype, objectid, reasoncode, ts)
+- **auditerror**: 에러 로그 (level, code, message, stack, ts)
+- **dicomaimark**: AI 판독 결과 (studyinsuid, seriesinsuid, sopinstanceuid, label, bboxjson, score, source)
 
 ---
 
