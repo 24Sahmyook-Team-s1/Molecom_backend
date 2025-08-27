@@ -2,6 +2,7 @@ package com.pacs.molecoms.dicomfile.service;
 
 import com.pacs.molecoms.oracle.repository.OracleImageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
+@Profile("oracle")   // ✅ 오라클 프로필에서만 활성화
 public class DicomFileFetchService {
 
     private final OracleImageRepository oracleImageRepo;
