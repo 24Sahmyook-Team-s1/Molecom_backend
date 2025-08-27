@@ -8,11 +8,14 @@ import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
 import com.pacs.molecoms.security.JwtUtil;
 import com.pacs.molecoms.user.dto.*;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -124,6 +127,7 @@ public class UserService {
         s.setExpires_at(expiry);
 
         sessionRepository.save(s);
+        createDeleteEvent();
         return authResponse;
     }
 
@@ -134,4 +138,18 @@ public class UserService {
         cookieUtil.clearJwtCookie(response, "refreshToken", true);
     }
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Transactional
+    public void createDeleteEvent() {
+        String sql = """
+            CREATE EVENT IF NOT EXISTS delete_expired_rows
+            ON SCHEDULE EVERY 1 MINUTE
+            DO
+              DELETE FROM auth_session
+              WHERE expires_at < NOW();
+            """;
+        jdbcTemplate.execute(sql);
+    }
 }
