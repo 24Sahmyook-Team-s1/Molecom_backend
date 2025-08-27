@@ -1,6 +1,6 @@
 package com.pacs.molecoms.dicomfile.service;
 
-import com.pacs.molecoms.oracle.repository.OracleImageRepository;
+import com.pacs.molecoms.oracle.repository.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +12,7 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class DicomFileFetchService {
 
-    private final OracleImageRepository oracleImageRepo;
+    private final ImageRepository oracleImageRepo;
     private final CifsFileService cifsFileService;
 
     /** 복합키로 조회 → SMB 스트림 오픈 */

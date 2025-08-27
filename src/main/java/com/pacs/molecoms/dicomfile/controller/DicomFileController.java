@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/dicom")
@@ -56,5 +55,8 @@ public class DicomFileController {
                         ContentDisposition.inline().filename(fname, java.nio.charset.StandardCharsets.UTF_8).build()))
                 .body(body);
     }
+
+
+
 
 }

@@ -1,6 +1,7 @@
 package com.pacs.molecoms.security;
 
 import com.pacs.molecoms.mysql.entity.User;
+import com.pacs.molecoms.mysql.entity.UserRole;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,10 +29,10 @@ public class CustomUserDetails implements UserDetails {
     }
 
     @Override
-    public String getUsername() { return user.getEmail()+":"+user.getProvider(); }
+    public String getUsername() { return user.getDisplayName(); }
 
-    public String getProvider(){
-        return user.getProvider();
+    public UserRole getRole(){
+        return user.getRole();
     }
 
     public String getEmail(){

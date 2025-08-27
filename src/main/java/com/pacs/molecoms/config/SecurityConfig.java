@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,7 @@ import org.springframework.web.cors.*;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     private static final String[] SWAGGER_WHITELIST = {
@@ -33,7 +35,7 @@ public class SecurityConfig {
             // 필요 시 로그인/회원가입 API 추가: "/api/auth/**"
     };
 
-    @Value("${app.security.cors.allowed-origins:http://localhost:3000}")
+    @Value("${app.security.cors.allowed-origins:http://localhost:5173}")
     private List<String> allowedOrigins;
 
     @Bean

@@ -48,7 +48,7 @@ jwt:
     secret: ${JWT_SECRET:fd471a4de6ec54a281f66c51c264a2e7}  # 32바이트 이상
     security:
       cors:
-        allowed-origins: "http://localhost:3000,https://your-frontend.example.com"
+        allowed-origins: "http://localhost:5173,https://your-frontend.example.com"
 
 cifs:
   # 공유 루트. 예: smb://fileserver/dicom  또는  //fileserver/dicom (자동 보정됨)
