@@ -77,6 +77,7 @@ public class UserController {
     @DeleteMapping("/{id}/Hard")
     public ResponseEntity<Void> deletedelete(@PathVariable Long id) {
         service.deleteHard(id);
+        logService.saveLog(id, DBlist.USERS, LogAction.DELETE);
         return ResponseEntity.noContent().build();
     }
 
@@ -84,10 +85,11 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<AuthRes> login(@RequestBody LoginReq request, HttpServletResponse response) {
         AuthRes authRes = service.login(request, response);
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
-        LogReq logReq = new LogReq(user, DBlist.USERS, LogAction.SELECT);
-        logService.saveLog(logReq);
+//        User user = userRepository.findByEmail(request.getEmail())
+//                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
+//        LogReq logReq = new LogReq(user, DBlist.USERS, LogAction.SELECT);
+//        logService.saveLog(logReq);
+        logService.saveLog(request, DBlist.USERS, LogAction.SELECT);
         return ResponseEntity.ok(authRes);
     }
 
