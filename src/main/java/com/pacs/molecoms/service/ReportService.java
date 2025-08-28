@@ -9,19 +9,20 @@ import com.pacs.molecoms.mysql.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ReportService {
 
     private final ReportRepository reportRepository;
-    private final UserRepository userRepository;   // ✅ 추가
+    private final UserRepository userRepository;
 
+    // ✅ Report 저장
     public ReportResponse saveReport(ReportRequest request) {
-        // ✅ authorId로 User 엔티티 조회
         User author = userRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + request.getAuthorId()));
 
-        // ✅ Report 엔티티 생성 (author 연결)
         Report report = Report.builder()
                 .studyKey(request.getStudyKey())
                 .seriesKey(request.getSeriesKey())
@@ -30,22 +31,47 @@ public class ReportService {
                 .content(request.getContent())
                 .studyUid(request.getStudyUid())
                 .patientId(request.getPatientId())
-                .author(author)   // ✅ authorId 대신 author 엔티티 설정
+                .author(author)
                 .build();
 
         Report saved = reportRepository.save(report);
 
-        // ✅ Response DTO 변환
+        return mapToResponse(saved);
+    }
+
+    // ✅ 단일 조회
+    public ReportResponse getReport(Long id) {
+        Report report = reportRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Report not found with id: " + id));
+        return mapToResponse(report);
+    }
+
+    // ✅ Study 단위 조회
+    public List<ReportResponse> getReportsByStudy(Long studyKey) {
+        return reportRepository.findByStudyKey(studyKey).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // ✅ Study + Series 단위 조회
+    public List<ReportResponse> getReportsByStudyAndSeries(Long studyKey, Long seriesKey) {
+        return reportRepository.findByStudyKeyAndSeriesKey(studyKey, seriesKey).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // ✅ Entity → DTO 변환 공통 메서드
+    private ReportResponse mapToResponse(Report report) {
         return ReportResponse.builder()
-                .id(saved.getId())
-                .studyKey(saved.getStudyKey())
-                .seriesKey(saved.getSeriesKey())
-                .modality(saved.getModality())
-                .bodyPart(saved.getBodyPart())
-                .content(saved.getContent())
-                .studyUid(saved.getStudyUid())
-                .patientId(saved.getPatientId())
-                .authorId(saved.getAuthor().getId()) // ✅ authorId는 엔티티에서 꺼냄
+                .id(report.getId())
+                .studyKey(report.getStudyKey())
+                .seriesKey(report.getSeriesKey())
+                .modality(report.getModality())
+                .bodyPart(report.getBodyPart())
+                .content(report.getContent())
+                .studyUid(report.getStudyUid())
+                .patientId(report.getPatientId())
+                .authorId(report.getAuthor().getId())
                 .build();
     }
 }
