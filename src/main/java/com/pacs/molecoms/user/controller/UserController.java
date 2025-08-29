@@ -51,9 +51,9 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 단건 조회")
-    @GetMapping("/{id}")
-    public ResponseEntity<UserRes> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+    @GetMapping("/{email}")
+    public ResponseEntity<UserRes> get(@PathVariable String email) {
+        return ResponseEntity.ok(service.get(email));
     }
 
     @PreAuthorize("hasRole('ADMIN') or @self.isSelf(#id, authentication)")

@@ -62,6 +62,12 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public UserRes get(String email) {
+        return userRepository.findByEmail(email).map(this::toRes)
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+    }
+
     @Transactional
     public UserRes update(Long id, UserUpdateReq req) {
         User u = userRepository.findById(id)
