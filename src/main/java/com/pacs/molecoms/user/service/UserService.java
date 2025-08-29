@@ -62,6 +62,12 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public UserRes get(String email) {
+        return userRepository.findByEmail(email).map(this::toRes)
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+    }
+
     @Transactional
     public UserRes update(Long id, UserUpdateReq req) {
         User u = userRepository.findById(id)
@@ -115,7 +121,7 @@ public class UserService {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
 
-        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().userId(user.getId()).build());
+        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().user(user).build());
 //        Session s = Session.builder()
 //                .user_id(3L)
 //                .jwt_token(accessToken)

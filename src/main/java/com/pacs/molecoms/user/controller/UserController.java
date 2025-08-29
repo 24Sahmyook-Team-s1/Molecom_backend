@@ -1,6 +1,11 @@
 package com.pacs.molecoms.user.controller;
 
-import com.pacs.molecoms.mysql.entity.UserStatus;
+import com.pacs.molecoms.exception.ErrorCode;
+import com.pacs.molecoms.exception.MolecomsException;
+import com.pacs.molecoms.log.dto.LogReq;
+import com.pacs.molecoms.log.service.LogService;
+import com.pacs.molecoms.mysql.entity.*;
+import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.user.dto.*;
 import com.pacs.molecoms.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService service;
+    private final UserRepository userRepository;
+    private final LogService logService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 생성")
@@ -44,9 +51,9 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 단건 조회")
-    @GetMapping("/{id}")
-    public ResponseEntity<UserRes> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+    @GetMapping("/{email}")
+    public ResponseEntity<UserRes> get(@PathVariable String email) {
+        return ResponseEntity.ok(service.get(email));
     }
 
     @PreAuthorize("hasRole('ADMIN') or @self.isSelf(#id, authentication)")
@@ -70,6 +77,7 @@ public class UserController {
     @DeleteMapping("/{id}/Hard")
     public ResponseEntity<Void> deletedelete(@PathVariable Long id) {
         service.deleteHard(id);
+        logService.saveLog(id, DBlist.USERS, LogAction.DELETE);
         return ResponseEntity.noContent().build();
     }
 
@@ -77,6 +85,11 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<AuthRes> login(@RequestBody LoginReq request, HttpServletResponse response) {
         AuthRes authRes = service.login(request, response);
+//        User user = userRepository.findByEmail(request.getEmail())
+//                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
+//        LogReq logReq = new LogReq(user, DBlist.USERS, LogAction.SELECT);
+//        logService.saveLog(logReq);
+        logService.saveLog(request, DBlist.USERS, LogAction.SELECT);
         return ResponseEntity.ok(authRes);
     }
 
