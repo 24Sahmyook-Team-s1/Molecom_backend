@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -15,6 +16,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/dicom")
 @RequiredArgsConstructor
+@Profile("oracle") // ✅ 오라클 프로필에서만 활성화
 public class DicomFileController {
 
     private final DicomFileFetchService fetchService;
@@ -32,7 +34,7 @@ public class DicomFileController {
             @PathVariable Long seriesKey,
             @PathVariable Long imageKey) throws IOException {
 
-        // 1) 미리 연다 → 여기서 실패하면 예외 처리기로 감
+        // 1) DICOM 파일 스트림 열기
         final var in = fetchService.openDicomStream(studyKey, seriesKey, imageKey);
         final var fname = fetchService.getFileName(studyKey, seriesKey, imageKey);
 
@@ -55,8 +57,5 @@ public class DicomFileController {
                         ContentDisposition.inline().filename(fname, java.nio.charset.StandardCharsets.UTF_8).build()))
                 .body(body);
     }
-
-
-
 
 }
