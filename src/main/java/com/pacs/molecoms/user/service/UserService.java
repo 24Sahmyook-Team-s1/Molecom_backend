@@ -32,7 +32,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UserRes create(UserCreateReq req) {
+        public UserRes create(UserCreateReq req) {
         if (userRepository.existsByEmail(req.email()))
             throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
 
@@ -138,10 +138,11 @@ public class UserService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        Session s = sessionRepository.findByaccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        Session s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        System.out.println("시이이ㅣ이이팔  " + cookieUtil.getTokenFromCookie(request, "accessToken"));
         sessionRepository.delete(s);
-        cookieUtil.clearJwtCookie(response, "accessToken", true);
-        cookieUtil.clearJwtCookie(response, "refreshToken", true);
+        cookieUtil.clearJwtCookie(response, "accessToken", false);
+        cookieUtil.clearJwtCookie(response, "refreshToken", false);
     }
 
     @Autowired
