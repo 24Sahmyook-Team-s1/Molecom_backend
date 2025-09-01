@@ -1,34 +1,42 @@
 spring:
+  application:
+    name: molecom-backend
   profiles:
-    active: local   # 현재 local 프로필만 활성화
+    active: local
 
----
-spring:
-  config:
-    activate:
-      on-profile: local
+  # 기본(Primary) 데이터소스: MySQL
   datasource:
     jdbc-url: jdbc:mysql://localhost:3306/dicom_app?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
-    username: root
-    password: 1111
+    username: ${MYSQL_USERNAME:dev}
+    password: ${MYSQL_PASSWORD:devpass}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
 
----
-spring:
-  config:
-    activate:
-      on-profile: oracle
+  jpa:
+    open-in-view: false
+    # 기본 EMF(MySQL)에 적용
+    hibernate:
+      ddl-auto: update        # 로컬은 update 가능
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect  # 생략 가능(드라이버로 자동 유추)
+        format_sql: true
+        jdbc.time_zone: Asia/Seoul
+    show-sql: false
+
+# 보조 데이터소스: Oracle (커스텀 prefix)
 app:
   datasource:
     oracle:
-      url: jdbc:oracle:thin:@210.94.241.9:1521/xe
-      username: C##sahmyook
-      password: sahmyook1
+      url: jdbc:oracle:thin:@//210.94.241.9:1521/xe
+      username: ${ORACLE_USERNAME:C##sahmyook}
+      password: ${ORACLE_PASSWORD:sahmyook1}
       driver-class-name: oracle.jdbc.OracleDriver
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 2
   jpa:
     oracle:
       ddl-auto: validate
@@ -36,12 +44,30 @@ app:
       properties:
         hibernate.dialect: org.hibernate.dialect.OracleDialect
 
----
-spring:
-  config:
-    activate:
-      on-profile: local
-
 jwt:
-  secret: fd471a4de6ec54a281f66c51c264a2e7  # ✅ JWT 서명용 비밀키
-  expiration: 3600000                      # ✅ 토큰 만료시간 (1시간 = 3600000ms)
+    secret: ${JWT_SECRET:fd471a4de6ec54a281f66c51c264a2e7}  # 32바이트 이상
+    security:
+      cors:
+        allowed-origins: "http://210.94.241.45:5173,http://localhost:5173"
+
+cifs:
+  # 공유 루트. 예: smb://fileserver/dicom  또는  //fileserver/dicom (자동 보정됨)
+  base-url: smb://210.94.241.9/sts
+  domain:         # AD 도메인 없으면 비워도 됨
+  username: ${CIFS_USER:syu}
+  password: ${CIFS_PASS:1}
+
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.apache.catalina.connector.OutputBuffer: ERROR
+    org.apache.catalina.core: ERROR
+
+springdoc:
+  api-docs.enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

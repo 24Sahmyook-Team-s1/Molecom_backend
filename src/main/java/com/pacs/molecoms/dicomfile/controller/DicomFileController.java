@@ -14,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/dicom")
+@RequestMapping("/api/dicom")
 @RequiredArgsConstructor
 @Profile("oracle") // ✅ 오라클 프로필에서만 활성화
 public class DicomFileController {
@@ -42,9 +42,12 @@ public class DicomFileController {
             try (var is = in) {
                 is.transferTo(out);
             } catch (org.apache.catalina.connector.ClientAbortException e) {
-                // 클라이언트 취소 → 무시
+                // 클라이언트 취소는 정상 흐름으로 보고 조용히 무시
+                // (로그 레벨 낮게)
             } catch (Exception e) {
-                // 스트리밍 중 예외 → 로깅만
+                // 스트리밍 중 예외는 여기서 끝내고 밖으로 던지지 말 것
+                // 밖으로 나가면 응답은 이미 200/디콤으로 커밋된 상태라 500 로그가 또 뜸
+                // 필요 시 내부 로깅만
             }
         };
 
@@ -54,4 +57,5 @@ public class DicomFileController {
                         ContentDisposition.inline().filename(fname, java.nio.charset.StandardCharsets.UTF_8).build()))
                 .body(body);
     }
+
 }

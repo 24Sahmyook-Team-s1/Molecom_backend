@@ -1,6 +1,6 @@
 package com.pacs.molecoms.dicomfile.service;
 
-import com.pacs.molecoms.oracle.repository.OracleImageRepository;
+import com.pacs.molecoms.oracle.repository.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.io.InputStream;
 @Profile("oracle")   // ✅ 오라클 프로필에서만 활성화
 public class DicomFileFetchService {
 
-    private final OracleImageRepository oracleImageRepo;
+    private final ImageRepository oracleImageRepo;
     private final CifsFileService cifsFileService;
 
     /** 복합키로 조회 → SMB 스트림 오픈 */
