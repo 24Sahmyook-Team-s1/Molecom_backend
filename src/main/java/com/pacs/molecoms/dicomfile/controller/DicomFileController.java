@@ -16,7 +16,6 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/dicom")
 @RequiredArgsConstructor
-@Profile("oracle") // ✅ 오라클 프로필에서만 활성화
 public class DicomFileController {
 
     private final DicomFileFetchService fetchService;

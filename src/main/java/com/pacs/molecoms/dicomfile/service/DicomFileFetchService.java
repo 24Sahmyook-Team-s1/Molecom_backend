@@ -11,7 +11,6 @@ import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
-@Profile("oracle")   // ✅ 오라클 프로필에서만 활성화
 public class DicomFileFetchService {
 
     private final ImageRepository oracleImageRepo;
