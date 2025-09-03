@@ -49,8 +49,8 @@ public class DicomQueryController {
                     "해당 Series를 SeriesDto 형태로 반환합니다."
     )
     @GetMapping("/studies/{studyInsUid}")
-    public ResponseEntity<SeriesDto> getStudy(@PathVariable String studyInsUid) {
-        return ResponseEntity.ok(dicomQueryService.getStudyByUid(studyInsUid));
+    public ResponseEntity<List<SeriesDto>> getStudy(@PathVariable String studyInsUid) {
+        return ResponseEntity.ok(dicomQueryService.getSeriesByStudyUid(studyInsUid));
     }
 
     // GET /api/series/{seriesinsuid}/images

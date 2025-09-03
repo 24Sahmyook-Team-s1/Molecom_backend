@@ -12,5 +12,5 @@ public interface SeriesRepository extends JpaRepository<SeriesEntity, SeriesId> 
     Optional<SeriesEntity> findBySeriesInsUid(String seriesInsUid);
     List<SeriesEntity> findByStudyKeyOrderBySeriesNumAsc(Long studyKey);
     Optional<SeriesEntity> findByStudyKeyAndSeriesKey(Long studyKey, Long seriesKey);
-    Optional<SeriesEntity> findByStudyInsUid(String studyInsUid);
+    List<SeriesEntity> findByStudyInsUid(String studyInsUid);
 }

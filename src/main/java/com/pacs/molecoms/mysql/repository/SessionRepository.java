@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface SessionRepository extends JpaRepository<Session, Long>{
     Optional<Session> findByUserId(Long userId);
-    Session findByaccessToken(String accessToken);
+    Session findByAccessToken(String accessToken);
 //    boolean existsByEmail(String email);
 //    boolean existsByEmailAndProvider(String email, String provider);
 //    Optional<User> findById(Long id);

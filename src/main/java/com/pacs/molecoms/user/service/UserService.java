@@ -32,7 +32,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UserRes create(UserCreateReq req) {
+        public UserRes create(UserCreateReq req) {
         if (userRepository.existsByEmail(req.email()))
             throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
 
@@ -59,6 +59,12 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserRes get(Long id) {
         return userRepository.findById(id).map(this::toRes)
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+    }
+
+    @Transactional(readOnly = true)
+    public UserRes get(String email) {
+        return userRepository.findByEmail(email).map(this::toRes)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
     }
 
@@ -109,13 +115,13 @@ public class UserService {
         String refreshToken = jwtUtil.generateRefreshToken(user);
 
         AuthRes authResponse=  new AuthRes(accessToken, refreshToken);
-        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), true);
-        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), true);
+        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), false);
+        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), false);
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
 
-        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().userId(user.getId()).build());
+        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().user(user).build());
 //        Session s = Session.builder()
 //                .user_id(3L)
 //                .jwt_token(accessToken)
@@ -132,11 +138,30 @@ public class UserService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        Session s = sessionRepository.findByaccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        Session s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        System.out.println("시이이ㅣ이이팔  " + cookieUtil.getTokenFromCookie(request, "accessToken"));
         sessionRepository.delete(s);
-        cookieUtil.clearJwtCookie(response, "accessToken", true);
-        cookieUtil.clearJwtCookie(response, "refreshToken", true);
+        cookieUtil.clearJwtCookie(response, "accessToken", false);
+        cookieUtil.clearJwtCookie(response, "refreshToken", false);
     }
+
+    public UserRes meFromRequest(HttpServletRequest request) {
+        String token = cookieUtil.getTokenFromCookie(request, "accessToken");
+        if (token == null) {
+            throw new MolecomsException(ErrorCode.UNAUTHORIZED, "accessToken이 없습니다.");
+        }
+
+        String uidStr = jwtUtil.getUserIdFromToken(token);
+        if (uidStr == null || uidStr.isBlank()) {
+            throw new MolecomsException(ErrorCode.UNAUTHORIZED, "토큰에 email가 없습니다.");
+        }
+
+        var user = userRepository.findByEmail(uidStr)
+                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다."));
+        return toRes(user);
+    }
+
+
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
