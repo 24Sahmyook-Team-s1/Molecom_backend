@@ -1,3 +1,4 @@
+// com/pacs/molecoms/config/MysqlJpaConfig.java
 package com.pacs.molecoms.config;
 
 import jakarta.persistence.EntityManagerFactory;
@@ -22,27 +23,29 @@ import javax.sql.DataSource;
         transactionManagerRef = "mysqlTx"
 )
 @EntityScan(basePackages = "com.pacs.molecoms.mysql.entity")
+@Profile("local") // ✅ local 프로필에서만 활성화
 public class MysqlJpaConfig {
 
-    @Bean
+    @Bean("mysqlDataSource")
     @Primary
     @ConfigurationProperties("spring.datasource")
     public DataSource mysqlDataSource() {
         return DataSourceBuilder.create().build();
     }
 
-    @Bean
+    @Bean("mysqlEmf")
     @Primary
     public LocalContainerEntityManagerFactoryBean mysqlEmf(
             @Qualifier("mysqlDataSource") DataSource ds,
             EntityManagerFactoryBuilder builder) {
-        return builder.dataSource(ds)
+        return builder
+                .dataSource(ds)
                 .packages("com.pacs.molecoms.mysql.entity")
                 .persistenceUnit("mysql")
                 .build();
     }
 
-    @Bean
+    @Bean("mysqlTx")
     @Primary
     public PlatformTransactionManager mysqlTx(
             @Qualifier("mysqlEmf") EntityManagerFactory emf) {

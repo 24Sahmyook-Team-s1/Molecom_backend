@@ -93,6 +93,16 @@ public class UserController {
         return ResponseEntity.ok(authRes);
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "본인 정보 조회(me) - accessToken 기반")
+    @GetMapping("/me")
+    public ResponseEntity<UserRes> me(HttpServletRequest request) {
+        UserRes me = service.meFromRequest(request);
+        logService.saveLog(me.id(), DBlist.USERS, LogAction.SELECT);
+        return ResponseEntity.ok(me);
+    }
+
+
     @Operation(summary = "로그아웃")
     @PostMapping(value = "/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {

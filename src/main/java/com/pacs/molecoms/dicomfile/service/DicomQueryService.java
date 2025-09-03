@@ -17,8 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,18 +66,33 @@ public class DicomQueryService {
     }
 
     @Transactional(readOnly = true, transactionManager = "oracleTx")
-    public SeriesDto getStudyByUid(String studyInsUid) {
-        SeriesEntity e = seriesRepository.findByStudyInsUid(studyInsUid)
-                .orElseThrow(() -> new IllegalArgumentException("Study not found: " + studyInsUid));
-        return SeriesDto.from(e);
+    public List<SeriesDto> getSeriesByStudyUid(String studyInsUid) {
+        StudyEntity study = studyRepository.findByStudyInsUid(studyInsUid)
+                .orElseThrow(() -> new RuntimeException("Study not found: " + studyInsUid));
+
+        List<SeriesEntity> seriesList = seriesRepository.findByStudyKeyOrderBySeriesNumAsc(study.getStudyKey());
+
+        return seriesList.stream()
+                .map(SeriesDto::from)
+                .toList();
     }
 
     @Transactional(readOnly = true, transactionManager = "oracleTx")
     public List<ImageDto> listImagesBySeriesUid(String seriesInsUid) {
-        SeriesEntity s = seriesRepository.findBySeriesInsUid(seriesInsUid)
-                .orElseThrow(() -> new IllegalArgumentException("Series not found: " + seriesInsUid));
-        List<ImageEntity> images = imageRepository.findByStudyKeyAndSeriesKey(s.getStudyKey(), s.getSeriesKey());
-        return images.stream().map(ImageDto::from).toList();
+        // 1) 시리즈 조회
+        SeriesEntity series = seriesRepository.findBySeriesInsUid(seriesInsUid)
+                .orElseThrow(() -> new RuntimeException("Series not found: " + seriesInsUid));
+
+        // 2) 해당 시리즈에 속한 이미지들 조회 (정렬 필요 시 OrderBy)
+        List<ImageEntity> images = imageRepository.findByStudyKeyAndSeriesKeyOrderByImageKeyAsc(
+                series.getStudyKey(),
+                series.getSeriesKey()
+        );
+
+        // 3) DTO 변환
+        return images.stream()
+                .map(ImageDto::from)
+                .toList();
     }
 
 

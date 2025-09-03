@@ -38,11 +38,10 @@ public class OracleJpaConfig {
     @Bean("oracleDataSource")
     public DataSource oracleDataSource(
             @Qualifier("oracleDataSourceProperties") DataSourceProperties props) {
-        // 여기서 props.getUrl()/getUsername()/getPassword() 가 Hikari에 주입됨
         HikariDataSource ds = props.initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
-        ds.setPoolName("oracle-hikari"); // 디버깅용 이름
+        ds.setPoolName("oracle-hikari");
         return ds;
     }
 
@@ -55,7 +54,7 @@ public class OracleJpaConfig {
         Map<String, Object> jpa = new HashMap<>();
         if (jpaProps.getDdlAuto() != null) jpa.put("hibernate.hbm2ddl.auto", jpaProps.getDdlAuto());
         jpa.put("hibernate.show_sql", jpaProps.isShowSql());
-        jpa.putAll(jpaProps.getProperties()); // dialect 등
+        jpa.putAll(jpaProps.getProperties());
 
         return builder
                 .dataSource(ds)

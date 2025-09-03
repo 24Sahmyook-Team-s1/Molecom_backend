@@ -115,8 +115,8 @@ public class UserService {
         String refreshToken = jwtUtil.generateRefreshToken(user);
 
         AuthRes authResponse=  new AuthRes(accessToken, refreshToken);
-        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), true);
-        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), true);
+        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), false);
+        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), false);
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
@@ -144,6 +144,24 @@ public class UserService {
         cookieUtil.clearJwtCookie(response, "accessToken", false);
         cookieUtil.clearJwtCookie(response, "refreshToken", false);
     }
+
+    public UserRes meFromRequest(HttpServletRequest request) {
+        String token = cookieUtil.getTokenFromCookie(request, "accessToken");
+        if (token == null) {
+            throw new MolecomsException(ErrorCode.UNAUTHORIZED, "accessToken이 없습니다.");
+        }
+
+        String uidStr = jwtUtil.getUserIdFromToken(token);
+        if (uidStr == null || uidStr.isBlank()) {
+            throw new MolecomsException(ErrorCode.UNAUTHORIZED, "토큰에 email가 없습니다.");
+        }
+
+        var user = userRepository.findByEmail(uidStr)
+                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다."));
+        return toRes(user);
+    }
+
+
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

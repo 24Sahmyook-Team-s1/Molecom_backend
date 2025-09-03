@@ -12,10 +12,9 @@ public class CookieUtil {
     public void addJwtCookie(HttpServletResponse response, String name, String token, boolean secure) {
         ResponseCookie cookie = ResponseCookie.from(name, token)
                 .httpOnly(true)
-//                .secure(secure)
-                .secure(false)
+                .secure(secure)
                 .path("/")
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(60 * 60 * 24) // 1일
                 .build();
 
@@ -26,10 +25,9 @@ public class CookieUtil {
     public void clearJwtCookie(HttpServletResponse response, String name, boolean secure) {
         ResponseCookie cookie = ResponseCookie.from(name, "")
                 .httpOnly(true)
-//                .secure(secure)
-                .secure(false)
+                .secure(secure)
                 .path("/")
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(0)
                 .build();
 
