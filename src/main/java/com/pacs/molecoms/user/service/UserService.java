@@ -141,8 +141,8 @@ public class UserService {
         Session s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
         System.out.println("시이이ㅣ이이팔  " + cookieUtil.getTokenFromCookie(request, "accessToken"));
         sessionRepository.delete(s);
-        cookieUtil.clearJwtCookie(response, "accessToken", false);
-        cookieUtil.clearJwtCookie(response, "refreshToken", false);
+        cookieUtil.clearJwtCookie(response, "accessToken", true);
+        cookieUtil.clearJwtCookie(response, "refreshToken", true);
     }
 
     @Autowired

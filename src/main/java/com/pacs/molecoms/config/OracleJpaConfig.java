@@ -27,7 +27,6 @@ import java.util.Map;
 )
 @EntityScan("com.pacs.molecoms.oracle.entity")
 @EnableConfigurationProperties(OracleJpaProps.class)
-@Profile("oracle") // ✅ oracle 프로필에서만 활성화
 public class OracleJpaConfig {
 
     @Bean("oracleDataSourceProperties")
