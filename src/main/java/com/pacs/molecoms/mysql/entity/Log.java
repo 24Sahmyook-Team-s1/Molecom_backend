@@ -13,16 +13,22 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(
-        name = "logs"
+        name = "user_logs"
 )
 public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** 행위자 (예: 요청 보낸 유저) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "actor_id", nullable = false)
+    private User actor;
+
+    /** 대상자 (예: CRUD 당한 유저) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "target_id", nullable = false)
+    private User target;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length=20)
