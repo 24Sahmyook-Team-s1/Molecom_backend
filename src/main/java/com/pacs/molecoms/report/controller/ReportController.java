@@ -1,8 +1,8 @@
-package com.pacs.molecoms.controller;
+package com.pacs.molecoms.report.controller;
 
-import com.pacs.molecoms.dto.ReportRequest;
-import com.pacs.molecoms.dto.ReportResponse;
-import com.pacs.molecoms.service.ReportService;
+import com.pacs.molecoms.report.dto.ReportRequest;
+import com.pacs.molecoms.report.dto.ReportResponse;
+import com.pacs.molecoms.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

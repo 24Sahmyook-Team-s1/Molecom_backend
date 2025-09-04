@@ -1,7 +1,7 @@
-package com.pacs.molecoms.service;
+package com.pacs.molecoms.report.service;
 
-import com.pacs.molecoms.dto.ReportRequest;
-import com.pacs.molecoms.dto.ReportResponse;
+import com.pacs.molecoms.report.dto.ReportRequest;
+import com.pacs.molecoms.report.dto.ReportResponse;
 import com.pacs.molecoms.mysql.entity.Report;
 import com.pacs.molecoms.mysql.entity.User;
 import com.pacs.molecoms.mysql.repository.ReportRepository;
