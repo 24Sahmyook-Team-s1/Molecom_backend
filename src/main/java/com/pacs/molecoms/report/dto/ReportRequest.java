@@ -12,6 +12,6 @@ public class ReportRequest {
     private String bodyPart;
     private String content;
     private String studyUid;
-    private Long patientId;  // ✅ 추가
-    private Long authorId;   // ✅ 추가
+    private Long patientId;   // 환자 ID
+    private Long authorId;    // 작성자 ID
 }

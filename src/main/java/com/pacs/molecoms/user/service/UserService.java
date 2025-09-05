@@ -79,19 +79,19 @@ public class UserService {
         return toRes(u);
     }
 
-    @Transactional
-    public void deleteSoft(Long id) {
-        User u = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-        u.setStatus(UserStatus.DELETED);
-    }
+//    @Transactional
+//    public void deleteSoft(Long id) {
+//        User u = userRepository.findById(id)
+//                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+//        u.setStatus(UserStatus.DELETED);
+//    }
 
     @Transactional
-    public void deleteHard(Long id) {
-        User u = userRepository.findById(id)
+    public Long deleteHard(String email) {
+        User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-//        u.setStatus(UserStatus.DELETED);
         userRepository.delete(u);
+        return u.getId();
     }
 
     private UserRes toRes(User u) {
