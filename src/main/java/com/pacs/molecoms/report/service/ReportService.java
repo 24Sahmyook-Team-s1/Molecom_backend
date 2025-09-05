@@ -56,7 +56,7 @@ public class ReportService {
 
         // ✅ 로그 저장 (Report 조회)
         reportLogRepository.save(ReportLog.builder()
-                .user(report.getAuthor()) // ⚠️ 현재는 작성자 기준, 실제 운영 시엔 로그인한 사용자 기준으로 변경 권장
+                .user(report.getAuthor()) // ⚠️ 현재는 작성자 기준, 실제론 로그인 사용자 기준이 바람직
                 .report(report)
                 .action(ReportAction.VIEW)
                 .detail("Report viewed")
@@ -69,31 +69,23 @@ public class ReportService {
     // ✅ Study 단위 조회
     public List<ReportResponse> getReportsByStudy(Long studyKey) {
         List<Report> reports = reportRepository.findByStudyKey(studyKey);
-
-        // 필요하다면 여기서도 VIEW 로그 기록 가능
         return reports.stream().map(this::mapToResponse).toList();
     }
 
     // ✅ Study + Series 단위 조회
     public List<ReportResponse> getReportsByStudyAndSeries(Long studyKey, Long seriesKey) {
         List<Report> reports = reportRepository.findByStudyKeyAndSeriesKey(studyKey, seriesKey);
-
-        // 필요하다면 여기서도 VIEW 로그 기록 가능
         return reports.stream().map(this::mapToResponse).toList();
     }
 
     // ✅ Entity → DTO 변환 공통 메서드
     public ReportResponse mapToResponse(Report report) {
         return ReportResponse.builder()
-                .id(report.getId())
-                .studyKey(report.getStudyKey())
-                .seriesKey(report.getSeriesKey())
                 .modality(report.getModality())
                 .bodyPart(report.getBodyPart())
                 .content(report.getContent())
-                .studyUid(report.getStudyUid())
-                .patientId(report.getPatientId())
                 .authorId(report.getAuthor().getId())
+                .createdAt(report.getCreatedAt())
                 .build();
     }
 }
