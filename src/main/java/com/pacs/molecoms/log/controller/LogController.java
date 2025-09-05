@@ -1,6 +1,7 @@
 package com.pacs.molecoms.log.controller;
 
 
+import com.pacs.molecoms.log.dto.ReportLogRes;
 import com.pacs.molecoms.log.dto.UserLogRes;
 import com.pacs.molecoms.log.service.LogService;
 import com.pacs.molecoms.mysql.entity.ReportLog;
@@ -43,16 +44,26 @@ public class LogController {
         return ResponseEntity.ok(logService.logList(pageable));
     }
 
-    // ✅ ReportLog 전체 조회 (DTO 변환 포함)
-    @GetMapping("/reports/logAll")
-    public ResponseEntity<List<ReportResponse>> getAllReportLogs() {
-        List<ReportLog> logs = reportLogRepository.findAll();
 
-        // ReportLog 내부에 Report 엔티티가 있다면 → reportLog.getReport() 로 꺼내서 변환
-        List<ReportResponse> responses = logs.stream()
-                .map(log -> reportService.mapToResponse(log.getReport())) // ReportLog -> Report -> ReportResponse
+    @Operation(summary = "모든 Report 로그 불러오기")
+    @GetMapping("/reports/logAll")
+    public ResponseEntity<List<ReportLogRes>> getAllReportLogs() {
+        List<ReportLogRes> responses = reportLogRepository.findAll().stream()
+                .map(this::toRes) // ReportLog -> ReportLogRes 변환
                 .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    // ReportLog -> ReportLogRes 변환 메서드
+    private ReportLogRes toRes(ReportLog log) {
+        return new ReportLogRes(
+                log.getId(),
+                log.getUser().getEmail(),
+                log.getReport().getId(),
+                log.getAction(),
+                log.getDetail(),
+                log.getCreatedAt()
+        );
     }
 
 }
