@@ -7,7 +7,7 @@ import com.pacs.molecoms.mysql.entity.UserLogAction;
 
 public record DicomLogRes (
     String actor,
-    String target,
+    String targetUid,
     DicomLogAction dicomLogAction,
     java.time.LocalDateTime createdAt
 )

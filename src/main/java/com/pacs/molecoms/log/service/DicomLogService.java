@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class DicomLogService {
     private final DicomLogRepository dicomLogRepository;
     private final UserRepository userRepository;
@@ -34,7 +35,7 @@ public class DicomLogService {
                 .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND, "actor 없음"));
     }
 
-    @Transactional
+
     public void saveLog(HttpServletRequest request, String targetUid, DicomLogAction action) {
         User actor = getActor(request);
         DicomLog log = DicomLog.builder()
@@ -52,7 +53,7 @@ public class DicomLogService {
 
     private DicomLogRes toRes(DicomLog l) {
         return new DicomLogRes(
-                l.getActor().getEmail(),l.getTargetUid(), l.getAction(), l.getCreatedAt()
+                l.getActor().getEmail(), l.getTargetUid(), l.getAction(), l.getCreatedAt()
         );
     }
 }
