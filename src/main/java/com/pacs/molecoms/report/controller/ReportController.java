@@ -3,8 +3,6 @@ package com.pacs.molecoms.report.controller;
 import com.pacs.molecoms.report.dto.ReportRequest;
 import com.pacs.molecoms.report.dto.ReportResponse;
 import com.pacs.molecoms.report.service.ReportService;
-import com.pacs.molecoms.mysql.entity.ReportLog;
-import com.pacs.molecoms.mysql.repository.ReportLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +15,6 @@ import java.util.List;
 public class ReportController {
 
     private final ReportService reportService;
-    private final ReportLogRepository reportLogRepository; // ✅ 로그 조회용
 
     // ✅ Report 생성
     @PostMapping
@@ -43,11 +40,5 @@ public class ReportController {
             @PathVariable Long studyKey,
             @PathVariable Long seriesKey) {
         return ResponseEntity.ok(reportService.getReportsByStudyAndSeries(studyKey, seriesKey));
-    }
-
-    // ✅ ReportLog 전체 조회
-    @GetMapping("/logs")
-    public ResponseEntity<List<ReportLog>> getAllReportLogs() {
-        return ResponseEntity.ok(reportLogRepository.findAll());
     }
 }
