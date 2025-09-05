@@ -53,7 +53,7 @@ public class DicomLogService {
 
     private DicomLogRes toRes(DicomLog l) {
         return new DicomLogRes(
-                l.getActor().getEmail(), l.getTargetUid(), l.getAction(), l.getCreatedAt()
+                l.getActor().getEmail(), l.getAction(), l.getTargetUid(), l.getCreatedAt()
         );
     }
 }
