@@ -4,7 +4,7 @@ import com.pacs.molecoms.mysql.entity.DBlist;
 import com.pacs.molecoms.mysql.entity.UserLogAction;
 import com.pacs.molecoms.mysql.entity.User;
 
-public record LogReq (
+public record UserLogReq(
 //    Long id,
         User actor,
         User target,
