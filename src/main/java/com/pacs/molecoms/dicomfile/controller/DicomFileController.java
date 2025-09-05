@@ -1,10 +1,13 @@
 package com.pacs.molecoms.dicomfile.controller;
 
 import com.pacs.molecoms.dicomfile.service.DicomFileFetchService;
+import com.pacs.molecoms.log.service.DicomLogService;
+import com.pacs.molecoms.mysql.entity.DicomLogAction;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
@@ -19,6 +22,7 @@ import java.io.IOException;
 public class DicomFileController {
 
     private final DicomFileFetchService fetchService;
+    private final DicomLogService dicomLogService;
 
     @Operation(summary = "DICOM 스트리밍")
     @ApiResponse(responseCode = "200", description = "OK",
@@ -31,11 +35,15 @@ public class DicomFileController {
     public ResponseEntity<StreamingResponseBody> stream(
             @PathVariable Long studyKey,
             @PathVariable Long seriesKey,
-            @PathVariable Long imageKey) throws IOException {
+            @PathVariable Long imageKey,
+            HttpServletRequest request) throws IOException {
 
         // 1) DICOM 파일 스트림 열기
         final var in = fetchService.openDicomStream(studyKey, seriesKey, imageKey);
         final var fname = fetchService.getFileName(studyKey, seriesKey, imageKey);
+
+        String targetUid = String.format("study=%d,series=%d,image=%d", studyKey, seriesKey, imageKey);
+        dicomLogService.saveLog(request, targetUid, DicomLogAction.OPEN_FILE);
 
         StreamingResponseBody body = out -> {
             try (var is = in) {
