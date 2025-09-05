@@ -82,14 +82,28 @@ public class LogService {
     }
 
     /* ========== ReportLog 관련 ========== */
-    public List<ReportLogRes> getAllReportLogs() {
-        return reportLogRepository.findAll().stream()
-                .map(l -> new ReportLogRes(
-                        l.getUser().getEmail(),
-                        l.getAction(),
-                        l.getDetail(),
-                        l.getCreatedAt()
-                ))
-                .toList();
+//    public List<ReportLogRes> getAllReportLogs() {
+//        return reportLogRepository.findAll().stream()
+//                .map(l -> new ReportLogRes(
+//                        l.getUser().getEmail(),
+//                        l.getAction(),
+//                        l.getDetail(),
+//                        l.getCreatedAt()
+//                ))
+//                .toList();
+//    }
+
+    public Page<ReportLogRes> reportLogList(Pageable pageable) {
+        Page<ReportLog> page = reportLogRepository.findAll(pageable);
+        return page.map(this::toReportRes);
+    }
+
+    private ReportLogRes toReportRes(ReportLog l) {
+        return new ReportLogRes(
+                l.getUser().getEmail(),
+                l.getAction(),
+                l.getDetail(),
+                l.getCreatedAt()
+        );
     }
 }
