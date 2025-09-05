@@ -38,4 +38,16 @@ public class LogController {
     public ResponseEntity<List<ReportLogRes>> getAllReportLogs() {
         return ResponseEntity.ok(logService.getAllReportLogs());
     }
+
+//    @Operation(summary = "모든 Report 로그 불러오기")
+//    @GetMapping("/reports/logAll")
+//    public ResponseEntity<Page<ReportLogRes>> getAllReportLogs(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "20") int size,
+//            @RequestParam(defaultValue = "createdAt,desc") String sort) { // ✅ createdAt 오타 수정
+//
+//        Sort sortObj = Sort.by(sort.split(",")[0]).descending();
+//        Pageable pageable = PageRequest.of(page, size, sortObj);
+//        return ResponseEntity.ok(logService.logList(pageable));
+//    }
 }

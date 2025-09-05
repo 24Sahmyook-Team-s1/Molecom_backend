@@ -85,9 +85,7 @@ public class LogService {
     public List<ReportLogRes> getAllReportLogs() {
         return reportLogRepository.findAll().stream()
                 .map(l -> new ReportLogRes(
-                        l.getId(),
                         l.getUser().getEmail(),
-                        l.getReport().getId(),
                         l.getAction(),
                         l.getDetail(),
                         l.getCreatedAt()
