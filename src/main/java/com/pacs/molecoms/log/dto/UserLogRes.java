@@ -4,10 +4,8 @@ import com.pacs.molecoms.mysql.entity.DBlist;
 import com.pacs.molecoms.mysql.entity.UserLogAction;
 
 public record UserLogRes(
-        Long id,
-        Long actorId,
-        Long targetId,
-        DBlist db,
+        String actor,
+        String target,
         UserLogAction logAction,
         java.time.LocalDateTime createdAt
 ) {}

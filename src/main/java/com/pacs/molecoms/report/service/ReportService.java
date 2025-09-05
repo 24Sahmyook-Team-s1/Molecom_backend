@@ -83,7 +83,7 @@ public class ReportService {
     }
 
     // ✅ Entity → DTO 변환 공통 메서드
-    private ReportResponse mapToResponse(Report report) {
+    public ReportResponse mapToResponse(Report report) {
         return ReportResponse.builder()
                 .id(report.getId())
                 .studyKey(report.getStudyKey())

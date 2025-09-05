@@ -41,7 +41,7 @@ public class LogService {
 
     private UserLogRes toRes(UserLog l) {
         return new UserLogRes(
-                l.getId(), l.getActor().getId(),l.getTarget().getId() , l.getDb(), l.getUserLogAction(), l.getCreatedAt()
+                l.getActor().getEmail(),l.getTarget().getEmail(), l.getUserLogAction(), l.getCreatedAt()
         );
     }
 

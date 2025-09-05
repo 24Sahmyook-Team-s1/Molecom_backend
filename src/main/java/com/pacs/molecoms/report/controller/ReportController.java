@@ -45,9 +45,4 @@ public class ReportController {
         return ResponseEntity.ok(reportService.getReportsByStudyAndSeries(studyKey, seriesKey));
     }
 
-    // ✅ ReportLog 전체 조회
-    @GetMapping("/logs")
-    public ResponseEntity<List<ReportLog>> getAllReportLogs() {
-        return ResponseEntity.ok(reportLogRepository.findAll());
-    }
 }
