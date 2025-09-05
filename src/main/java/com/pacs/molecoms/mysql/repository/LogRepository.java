@@ -1,9 +1,9 @@
 package com.pacs.molecoms.mysql.repository;
 
-import com.pacs.molecoms.mysql.entity.Log;
+import com.pacs.molecoms.mysql.entity.UserLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface LogRepository extends JpaRepository<Log, Long> {
+public interface LogRepository extends JpaRepository<UserLog, Long> {
 //    boolean existsByEmail(String email);
 //        boolean existsByEmailAndProvider(String email, String provider);
 //    Optional<User> findById(Long id);

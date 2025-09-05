@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "user_logs"
 )
-public class Log {
+public class UserLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,7 +36,7 @@ public class Log {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length=20)
-    private LogAction logAction;
+    private UserLogAction userLogAction;
 
     @CreationTimestamp
     @Column(name="created_at", nullable=false, updatable=false)

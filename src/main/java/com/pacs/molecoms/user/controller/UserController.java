@@ -52,7 +52,7 @@ public class UserController {
         UserRes created = service.create(req);
         // actor: 관리자 / target: 방금 생성된 사용자
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), created.id(), DBlist.USERS, LogAction.CREATE);
+        logService.saveLog(actor.getId(), created.id(), DBlist.USERS, UserLogAction.CREATE);
         return ResponseEntity.ok(created);
     }
 
@@ -72,7 +72,7 @@ public class UserController {
 
         // 리스트 조회의 target은 "목록"이라 특정 사용자 없음 → targetId를 null로 두고 액션만 남김(원하면 별도 objectId 사용)
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), DBlist.USERS, LogAction.READ_LIST);
+        logService.saveLog(actor.getId(), DBlist.USERS, UserLogAction.READ_LIST);
         return ResponseEntity.ok(result);
     }
 
@@ -86,7 +86,7 @@ public class UserController {
         UserRes res = service.get(email);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), target.getId(), DBlist.USERS, LogAction.READ);
+        logService.saveLog(actor.getId(), target.getId(), DBlist.USERS, UserLogAction.READ);
         return ResponseEntity.ok(res);
     }
 
@@ -99,7 +99,7 @@ public class UserController {
         UserRes res = service.update(id, req);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), id, DBlist.USERS, LogAction.UPDATE);
+        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.UPDATE);
         return ResponseEntity.ok(res);
     }
 
@@ -110,7 +110,7 @@ public class UserController {
         service.deleteSoft(id);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), id, DBlist.USERS, LogAction.DELETE);
+        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.DELETE);
         return ResponseEntity.noContent().build();
     }
 
@@ -121,7 +121,7 @@ public class UserController {
         service.deleteHard(id);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), id, DBlist.USERS, LogAction.HARD_DELETE);
+        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.HARD_DELETE);
         return ResponseEntity.noContent().build();
     }
 
@@ -132,7 +132,7 @@ public class UserController {
         AuthRes authRes = service.login(req, response);
         String useremail = jwtUtil.getUserIdFromToken(authRes.getAccessToken());
         User user = userRepository.findByEmail(useremail).orElseThrow(() ->new MolecomsException(ErrorCode.USER_NOT_FOUND, "해당 이메일이 존재하지 않습니다."));
-        logService.saveLog(user, DBlist.USERS, LogAction.LOGIN);
+        logService.saveLog(user, DBlist.USERS, UserLogAction.LOGIN);
         return ResponseEntity.ok(authRes);
     }
 
@@ -142,7 +142,7 @@ public class UserController {
     public ResponseEntity<UserRes> me(HttpServletRequest request) {
         UserRes me = service.meFromRequest(request);
         // 자기 자신 조회: actor = target = me.id
-        logService.saveLog(me.id(), DBlist.USERS, LogAction.READ);
+        logService.saveLog(me.id(), DBlist.USERS, UserLogAction.READ);
         return ResponseEntity.ok(me);
     }
 
@@ -153,7 +153,7 @@ public class UserController {
         // 서비스 로직이 세션/쿠키 정리
         service.logout(request, response);
         // 자기 자신 로그아웃: actor = target = actor.id
-        logService.saveLog(actor.getId(), DBlist.USERS, LogAction.LOGOUT);
+        logService.saveLog(actor.getId(), DBlist.USERS, UserLogAction.LOGOUT);
         return ResponseEntity.noContent().build();
     }
 }
