@@ -2,9 +2,12 @@ package com.pacs.molecoms.log.service;
 
 import com.pacs.molecoms.exception.ErrorCode;
 import com.pacs.molecoms.exception.MolecomsException;
+import com.pacs.molecoms.log.dto.DicomLogRes;
+import com.pacs.molecoms.log.dto.UserLogRes;
 import com.pacs.molecoms.mysql.entity.DicomLog;
 import com.pacs.molecoms.mysql.entity.DicomLogAction;
 import com.pacs.molecoms.mysql.entity.User;
+import com.pacs.molecoms.mysql.entity.UserLog;
 import com.pacs.molecoms.mysql.repository.DicomLogRepository;
 import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
@@ -12,6 +15,8 @@ import com.pacs.molecoms.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,6 +43,17 @@ public class DicomLogService {
                 .action(action)
                 .build();
         dicomLogRepository.save(log);
+    }
+
+    public Page<DicomLogRes> logList(Pageable pageable) {
+        Page<DicomLog> page = dicomLogRepository.findAll(pageable);
+        return page.map(this::toRes);
+    }
+
+    private DicomLogRes toRes(DicomLog l) {
+        return new DicomLogRes(
+                l.getActor().getEmail(),l.getTargetUid(), l.getAction(), l.getCreatedAt()
+        );
     }
 }
 

@@ -116,7 +116,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 삭제(하드)")
-    @DeleteMapping("/{id}/hard")
+    @DeleteMapping("/{email}/hard")
     public ResponseEntity<Void> deleteHard(@PathVariable String email, HttpServletRequest request) {
         Long deletedid = service.deleteHard(email);
 
