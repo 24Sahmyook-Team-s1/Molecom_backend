@@ -5,7 +5,10 @@ import com.pacs.molecoms.dicomfile.dto.SeriesDto;
 import com.pacs.molecoms.dicomfile.dto.StudySummaryDto;
 import com.pacs.molecoms.dicomfile.dto.ImageDto;
 import com.pacs.molecoms.dicomfile.service.DicomQueryService;
+import com.pacs.molecoms.log.service.DicomLogService;
+import com.pacs.molecoms.mysql.entity.DicomLogAction;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,6 +25,7 @@ import java.util.List;
 public class DicomQueryController {
 
     private final DicomQueryService dicomQueryService;
+    private final DicomLogService dicomLogService;
 
     // GET /api/studies?patientId&dateFrom&dateTo&modality
     @Operation(
@@ -36,9 +40,16 @@ public class DicomQueryController {
             @RequestParam(required = false) String patientId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @RequestParam(required = false) String modality
+            @RequestParam(required = false) String modality,
+            HttpServletRequest request
     ) {
-        return ResponseEntity.ok(dicomQueryService.searchStudies(patientId, dateFrom, dateTo, modality));
+        List<StudySummaryDto> result = dicomQueryService.searchStudies(patientId, dateFrom, dateTo, modality);
+        // 여러 건이 나올 수 있으므로 patientId 자체를 target으로 로그 남김
+        if (patientId != null) {
+            String query = String.format("query = '%s'", patientId);
+            dicomLogService.saveLog(request, query, DicomLogAction.OPEN_STUDY);
+        }
+        return ResponseEntity.ok(result);
     }
 
     // GET /api/studies/{studyinsuid}
@@ -49,8 +60,10 @@ public class DicomQueryController {
                     "해당 Series를 SeriesDto 형태로 반환합니다."
     )
     @GetMapping("/studies/{studyInsUid}")
-    public ResponseEntity<List<SeriesDto>> getStudy(@PathVariable String studyInsUid) {
-        return ResponseEntity.ok(dicomQueryService.getSeriesByStudyUid(studyInsUid));
+    public ResponseEntity<List<SeriesDto>> getStudy(@PathVariable String studyInsUid, HttpServletRequest request) {
+        List<SeriesDto> result = dicomQueryService.getSeriesByStudyUid(studyInsUid);
+        dicomLogService.saveLog(request, studyInsUid, DicomLogAction.OPEN_STUDY);
+        return ResponseEntity.ok(result);
     }
 
     // GET /api/series/{seriesinsuid}/images
@@ -61,8 +74,10 @@ public class DicomQueryController {
                     "삭제되지 않은(delflag=0 또는 NULL) 이미지들만 imageKey 오름차순으로 정렬해 제공합니다."
     )
     @GetMapping("/series/{seriesInsUid}/images")
-    public ResponseEntity<List<ImageDto>> getSeriesImages(@PathVariable String seriesInsUid) {
-        return ResponseEntity.ok(dicomQueryService.listImagesBySeriesUid(seriesInsUid));
+    public ResponseEntity<List<ImageDto>> getSeriesImages(@PathVariable String seriesInsUid, HttpServletRequest request) {
+        List<ImageDto> result = dicomQueryService.listImagesBySeriesUid(seriesInsUid);
+        dicomLogService.saveLog(request, seriesInsUid, DicomLogAction.OPEN_SERIES);
+        return ResponseEntity.ok(result);
     }
 
 

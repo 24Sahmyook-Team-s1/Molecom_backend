@@ -1,18 +1,17 @@
-package com.pacs.molecoms.dto;
+package com.pacs.molecoms.report.dto;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
-@Builder
-public class ReportResponse {
-    private Long id;
+@Setter
+public class ReportRequest {
     private Long studyKey;
     private Long seriesKey;
     private String modality;
     private String bodyPart;
     private String content;
     private String studyUid;
-    private Long patientId;
-    private Long authorId;
+    private Long patientId;  // ✅ 추가
+    private Long authorId;   // ✅ 추가
 }
