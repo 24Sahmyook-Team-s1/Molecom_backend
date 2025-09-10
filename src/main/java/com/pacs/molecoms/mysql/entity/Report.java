@@ -6,49 +6,41 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "report")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Table(
+        name = "report",
+        uniqueConstraints = @UniqueConstraint(name = "uq_report_study_key", columnNames = "study_key")
+)
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Report {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "study_key", nullable = false)
-    private Long studyKey;
-
-    @Column(name = "series_key", nullable = false)
-    private Long seriesKey;
-
-    @Column(name = "modality", nullable = false)
-    private String modality;
-
-    @Column(name = "body_part", nullable = false)
-    private String bodyPart;
+    private Long studyKey;            // Oracle studytab의 studykey (논리 FK)
 
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
-    private String content;
+    private String content;           // 리포트 본문
 
-    @Column(name = "study_uid", nullable = false)
-    private String studyUid;
-
-    @Column(name = "patient_id", nullable = false)
-    private Long patientId;
-
-    // ✅ User와 연관관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
-    private User author;
+    private User author;              // 작성자
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        var now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
+
