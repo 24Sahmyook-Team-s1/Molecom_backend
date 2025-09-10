@@ -35,7 +35,7 @@ public class ReportLog {
     private ReportAction action;
 
     // ✅ 부가 설명
-    @Column(name = "detail", length = 200)
+    @Column(name = "content", length = 200)
     private String detail;
 
     @CreationTimestamp

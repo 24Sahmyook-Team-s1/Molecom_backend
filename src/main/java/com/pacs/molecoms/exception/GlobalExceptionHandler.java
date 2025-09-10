@@ -81,6 +81,51 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return json(ErrorCode.BAD_REQUEST.getStatus(), body);
     }
 
+    // 403: @PreAuthorize 거부 (Spring Security 6)
+    @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    public ResponseEntity<Object> handleAuthorizationDenied(
+            org.springframework.security.authorization.AuthorizationDeniedException ex,
+            WebRequest request) {
+
+        var body = ErrorResponse.of(
+                ErrorCode.FORBIDDEN,
+                "접근이 거부되었습니다.",
+                List.of(),         // 필요시 FieldError 리스트 채우기
+                traceId()          // 네가 쓰는 traceId() 유틸 그대로
+        );
+        return json(ErrorCode.FORBIDDEN.getStatus(), body);
+    }
+
+    // (호환) 구버전 AccessDeniedException 케이스도 커버
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Object> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex,
+            WebRequest request) {
+
+        var body = ErrorResponse.of(
+                ErrorCode.FORBIDDEN,
+                "권한이 없습니다. 관리자에게 문의하세요.",
+                List.of(),
+                traceId()
+        );
+        return json(ErrorCode.FORBIDDEN.getStatus(), body);
+    }
+
+    // 401: 인증 실패/미인증 (필터/EntryPoint에서 던져져 들어오는 경우 대비)
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Object> handleAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex,
+            WebRequest request) {
+
+        var body = ErrorResponse.of(
+                ErrorCode.UNAUTHORIZED,
+                "인증이 필요합니다.",
+                List.of(),
+                traceId()
+        );
+        return json(ErrorCode.UNAUTHORIZED.getStatus(), body);
+    }
+
     // ====== 404 (yml 설정 필요 시 하단 참고) ======
     @Override
     @NonNull

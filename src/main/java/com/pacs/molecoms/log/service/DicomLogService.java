@@ -51,7 +51,7 @@ public class DicomLogService {
         return page.map(this::toRes);
     }
 
-    private DicomLogRes toRes(DicomLog l) {
+    public DicomLogRes toRes(DicomLog l) {
         return new DicomLogRes(
                 l.getActor().getEmail(), l.getAction(), l.getTargetUid(), l.getCreatedAt()
         );
