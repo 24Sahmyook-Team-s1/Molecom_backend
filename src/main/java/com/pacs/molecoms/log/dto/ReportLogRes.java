@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record ReportLogRes(
         String actor,
-        ReportAction action,
+        ReportAction logAction,
         String content,
         LocalDateTime createdAt
 ) {}

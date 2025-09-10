@@ -31,10 +31,10 @@ public class CombinedLogService {
 
     // 기존 매퍼 메서드가 있다면 재사용하거나 아래처럼 간단 매퍼 작성
     private CombinedLogRes map(ReportLogRes r) {
-        return new CombinedLogRes("REPORT", r.actor(), null, r.action().name(), r.content(), r.createdAt());
+        return new CombinedLogRes("REPORT", r.actor(), null, r.logAction().name(), r.content(), r.createdAt());
     }
     private CombinedLogRes map(DicomLogRes d) {
-        return new CombinedLogRes("DICOM", d.actor(), null, d.dicomLogAction().name(), d.content(), d.createdAt());
+        return new CombinedLogRes("DICOM", d.actor(), null, d.logAction().name(), d.content(), d.createdAt());
     }
     private CombinedLogRes map(UserLogRes u) {
         return new CombinedLogRes("USER", u.actor(), u.target(), u.logAction().name(), null, u.createdAt());

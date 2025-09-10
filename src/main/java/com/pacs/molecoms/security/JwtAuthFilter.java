@@ -51,7 +51,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         System.out.println("🛡️ 요청 URI: " + request.getRequestURI());
         System.out.println("🛡️ 추출된 토큰: " + token + "\n");
 
-        // === 여기 고침: 익명/미인증도 포함해서 덮어쓰기 ===
         var current = SecurityContextHolder.getContext().getAuthentication();
         boolean needSet = (current == null)
                 || (current instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)

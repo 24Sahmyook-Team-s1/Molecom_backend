@@ -112,7 +112,7 @@ public class ReportService {
 //        reportLogRepository.save(ReportLog.builder()
 //                .user(actor)
 //                .report(report)
-//                .action(ReportAction.DELETE)
+//                .logAction(ReportAction.DELETE)
 //                .detail("Report deleted: studyKey=" + studyKey)
 //                .build()
 //        );
