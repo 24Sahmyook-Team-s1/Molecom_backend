@@ -3,12 +3,11 @@ package com.pacs.molecoms.user.service;
 import com.pacs.molecoms.exception.ErrorCode;
 import com.pacs.molecoms.exception.MolecomsException;
 import com.pacs.molecoms.mysql.entity.*;
-import com.pacs.molecoms.mysql.repository.SessionRepository;
+import com.pacs.molecoms.mysql.repository.AuthSessionRepository;
 import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
 import com.pacs.molecoms.security.JwtUtil;
 import com.pacs.molecoms.user.dto.*;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,7 +25,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final SessionRepository sessionRepository;
+    private final AuthSessionRepository sessionRepository;
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final PasswordEncoder passwordEncoder;
@@ -121,14 +120,14 @@ public class UserService {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
 
-        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().user(user).build());
+        AuthSession s = sessionRepository.findByUserId(user.getId()).orElse(AuthSession.builder().user(user).build());
 //        Session s = Session.builder()
 //                .user_id(3L)
 //                .jwt_token(accessToken)
 //                .issued_at(now)
 //                .expires_at(expiry)
 //                .build();
-        s.setAccessToken(accessToken);
+        s.accessJti(accessToken);
         s.setIssued_at(now);
         s.setExpires_at(expiry);
 
@@ -138,7 +137,7 @@ public class UserService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        Session s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
+        AuthSession s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
         System.out.println("시이이ㅣ이이팔  " + cookieUtil.getTokenFromCookie(request, "accessToken"));
         sessionRepository.delete(s);
         cookieUtil.clearJwtCookie(response, "accessToken", false);
