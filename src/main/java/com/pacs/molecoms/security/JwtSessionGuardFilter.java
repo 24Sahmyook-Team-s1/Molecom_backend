@@ -29,10 +29,12 @@ public class JwtSessionGuardFilter extends OncePerRequestFilter {
         String at = cookieUtil.getTokenFromCookie(req, "accessToken");
         String rt = cookieUtil.getTokenFromCookie(req, "refreshToken");
 
-        // 1) Access 토큰 우선 검증
+        boolean triedRefresh = false; // 마지막에 판단용
+
+        // 1) Access 우선
         if (at != null) {
             try {
-                Long   userId    = Long.valueOf(jwtUtil.getSubject(at)); // sub = userId
+                Long userId = Long.valueOf(jwtUtil.getSubject(at));
                 String accessJti = jwtUtil.getJti(at);
 
                 var sess = sessionRepo.findByUser_Id(userId).orElse(null);
@@ -42,44 +44,59 @@ public class JwtSessionGuardFilter extends OncePerRequestFilter {
                     chain.doFilter(req, res);
                     return;
                 }
-                // access 불일치/만료면 아래 refresh 검사로
-            } catch (ExpiredJwtException e) {
-                // access 만료 → refresh로 시도
-            } catch (JwtException | IllegalArgumentException e) {
-                // 위조/형식/subject 파싱 에러 → refresh로 시도
+                // access 불일치/만료 → refresh 검사로 진행
+            } catch (ExpiredJwtException ignore) {
+                // access 문제 → refresh 검사로
+            } catch (JwtException ignore) {
+                // access 문제 → refresh 검사로
+            } catch (IllegalArgumentException ignore) {
+                // access 문제 → refresh 검사로
             }
         }
 
-        // 2) Refresh 검증 & 회전(rotate)
+        // 2) Refresh 검사 & 회전
         if (rt != null) {
+            triedRefresh = true;
             try {
-                Long   userId     = Long.valueOf(jwtUtil.getSubject(rt));
+                Long userId = Long.valueOf(jwtUtil.getSubject(rt));
                 String refreshJti = jwtUtil.getJti(rt);
 
-                var newAccessOpt = rotationService.rotateIfValid(userId, refreshJti,  res, cookieUtil);
+                // ❗ 인자 순서 바로잡기: (userId, refreshJti, cookieUtil, res)
+                var newAccessOpt = rotationService.rotateIfValid(userId, refreshJti, cookieUtil, res);
                 if (newAccessOpt.isPresent()) {
-                    // 새 access/refresh 쿠키까지 교체됨 → 통과
                     chain.doFilter(req, res);
                     return;
                 }
-            } catch (ExpiredJwtException e) {
-                // refresh 자체가 만료 → 아래 공통 실패 처리
-            } catch (JwtException | IllegalArgumentException  e) {
-                // 위조/형식/subject 파싱 에러
+                // 회전 실패 → 아래 공통 처리
+            } catch (ExpiredJwtException ignore) {
+                // access 문제 → refresh 검사로
+            } catch (JwtException ignore) {
+                // access 문제 → refresh 검사로
+            } catch (IllegalArgumentException ignore) {
+                // access 문제 → refresh 검사로
             }
         }
 
-        // 3) 실패: 쿠키 삭제 + 401
-        clearAndReject(res);
+        // 3) 실패 처리
+        if (triedRefresh) {
+            // refresh가 있었지만 실패(없음/무효/만료/세션불일치) → 둘 다 삭제
+            clearAndReject(res, true);
+        } else {
+            // refresh 자체가 없음 → access만 삭제 (refresh는 건드릴 게 없음)
+            clearAndReject(res, false);
+        }
     }
 
-    private void clearAndReject(HttpServletResponse res) throws IOException {
+    private void clearAndReject(HttpServletResponse res, boolean clearRefreshToo) throws IOException {
         cookieUtil.clearJwtCookie(res, "accessToken", false);
-        cookieUtil.clearJwtCookie(res, "refreshToken", false);
+        if (clearRefreshToo) {
+            cookieUtil.clearJwtCookie(res, "refreshToken", false);
+        }
         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         res.setContentType("application/json;charset=UTF-8");
         res.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"세션이 유효하지 않습니다.\"}");
     }
+
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -91,7 +108,9 @@ public class JwtSessionGuardFilter extends OncePerRequestFilter {
                 || path.startsWith("/actuator")
                 || path.equals("/error")
                 || path.equals("/api/users/login")
-                || path.equals("/api/users/signup")
-                || path.equals("/api/users/logout");
+                || path.equals("/api/users/signup");
     }
+
+    @Override protected boolean shouldNotFilterAsyncDispatch() { return false; }
+    @Override protected boolean shouldNotFilterErrorDispatch() { return false; }
 }

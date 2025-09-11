@@ -20,20 +20,21 @@ public class SessionRotationService {
 
     private final AuthSessionRepository sessionRepo;
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;  // JwtIssuer 제거, JwtUtil 직접 사용
+    private final JwtUtil jwtUtil;
 
     /**
      * refreshJti가 DB 세션과 일치하면 새 Access/Refresh를 발급하고 회전(rotate)한다.
      * 실패(만료/불일치) 시 Optional.empty().
      */
     @Transactional
-    public Optional<String> rotateIfValid(Long userId, String refreshJti, HttpServletResponse res, CookieUtil cookieUtil) {
+    public Optional<String> rotateIfValid(Long userId, String refreshJti,
+                                          CookieUtil cookieUtil, HttpServletResponse res) {
 
         var sessOpt = sessionRepo.findWithLockingByUser_Id(userId);
         if (sessOpt.isEmpty()) return Optional.empty();
         var sess = sessOpt.get();
 
-        // ⛔ 리프레시 만료일 경과 → 세션 만료(EXPIRED)
+        // 리프레시 만료일 경과 → 세션 만료(EXPIRED)
         if (sess.getRefreshExpireAt().isBefore(LocalDateTime.now())) {
             sess.expire();
             sessionRepo.save(sess);
@@ -45,7 +46,7 @@ public class SessionRotationService {
             return Optional.empty();
         }
 
-        // ✅ 실제 유저 조회 후 새 토큰 발급
+        // 실제 유저 조회 후 새 토큰 발급
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("세션 유저를 찾을 수 없음: " + userId));
 
@@ -65,7 +66,6 @@ public class SessionRotationService {
         cookieUtil.addJwtCookie(res, "accessToken", newAccess, false);
         cookieUtil.addJwtCookie(res, "refreshToken", newRefresh, false);
 
-        // SecurityContext 세팅용으로 새 access 반환
         return Optional.of(newAccess);
     }
 }
