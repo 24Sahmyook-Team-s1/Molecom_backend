@@ -30,7 +30,7 @@ public class DicomLogService {
 
     private User getActor(HttpServletRequest request) {
         String token = cookieUtil.getTokenFromCookie(request, "accessToken");
-        String uidStr = jwtUtil.getUserIdFromToken(token);
+        String uidStr = jwtUtil.getEmail(token);
         return userRepository.findByEmail(uidStr)
                 .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND, "actor 없음"));
     }

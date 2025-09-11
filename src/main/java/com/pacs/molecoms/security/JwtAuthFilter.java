@@ -1,155 +1,179 @@
 // src/main/java/com/pacs/molecoms/security/JwtAuthFilter.java
 package com.pacs.molecoms.security;
 
+import com.pacs.molecoms.mysql.repository.AuthSessionRepository;
+import com.pacs.molecoms.user.service.SessionRotationService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
-@Component
-public class JwtAuthFilter extends OncePerRequestFilter {
+    /**
+     * 단일 세션 강제 + 사일런트 리프레시
+     * - Access 검증 실패(만료/불일치) 시 Refresh로 조용히 회전(rotate)
+     * - Refresh 만료 시 세션을 EXPIRED로 전환하고 401 + 쿠키 삭제
+     */
+    @RequiredArgsConstructor
+    @Component
+    public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
+        private final JwtUtil jwtUtil;
+        private final CustomUserDetailsService userDetailsService;
+        private final AuthSessionRepository sessionRepo;
+        private final CookieUtil cookieUtil;
+        private final SessionRotationService rotationService;
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+                throws ServletException, IOException {
 
-        String token = null;
+            String accessToken  = extractAccessToken(request);
+            String refreshToken = extractRefreshToken(request);
 
-        // 1) Authorization 헤더
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            token = bearerToken.substring(7);
-        }
-        // 2) 쿠키
-        if (token == null && request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("accessToken".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    break;
-                }
-            }
-        }
+            var current = SecurityContextHolder.getContext().getAuthentication();
+            boolean needSet = (current == null)
+                    || (current instanceof AnonymousAuthenticationToken)
+                    || !current.isAuthenticated();
 
-        System.out.println("\n\n🛡️ JwtAuthenticationFilter 진입");
-        System.out.println("🛡️ 요청 URI: " + request.getRequestURI());
-        System.out.println("🛡️ 추출된 토큰: " + token + "\n");
-
-        var current = SecurityContextHolder.getContext().getAuthentication();
-        boolean needSet = (current == null)
-                || (current instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)
-                || !current.isAuthenticated();
-
-        if (token != null && jwtUtil.validateToken(token) && needSet) {
-            try {
-                String userId = jwtUtil.getUserIdFromToken(token); // e.g., email/uid
-                System.out.println("🛡️ 사용자 ID: " + userId);
-
-                // roles 클레임 파싱
-                Object rawRoles = jwtUtil.getClaim(token, "roles");
-                List<String> roles;
-                if (rawRoles instanceof Collection<?> c) {
-                    roles = c.stream().map(String::valueOf).toList();
-                } else if (rawRoles instanceof String s) {
-                    roles = Arrays.stream(s.split(","))
-                            .map(String::trim)
-                            .filter(v -> !v.isEmpty())
-                            .toList();
-                } else {
-                    roles = List.of();
-                }
-
-                // 권한 정규화
-                List<SimpleGrantedAuthority> authorities =
-                        roles.isEmpty()
-                                ? List.of() // 비어 있어도 null은 금지
-                                : roles.stream()
-                                .map(r -> r.toUpperCase(Locale.ROOT))
-                                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
-                                .map(SimpleGrantedAuthority::new)
-                                .toList();
-
-                // 1차: JWT만으로 principal 구성 (DB 실패해도 인증 세우기)
-                org.springframework.security.core.userdetails.User principalFromJwt =
-                        new org.springframework.security.core.userdetails.User(userId, "", authorities);
-
-                // 2차: 가능하면 DB로 보강(실패해도 무시)
-                Object principal = principalFromJwt;
+            // 1) Access 우선 검증
+            if (needSet && accessToken != null) {
                 try {
-                    CustomUserDetails userDetails =
-                            (CustomUserDetails) userDetailsService.loadUserByUsername(userId);
-                    // DB 권한도 ROLE_ 접두사 보정
-                    var mergedAuth = userDetails.getAuthorities().stream()
-                            .map(a -> a.getAuthority())
-                            .map(s -> s.toUpperCase(Locale.ROOT))
-                            .map(s -> s.startsWith("ROLE_") ? s : "ROLE_" + s)
-                            .distinct()
-                            .map(SimpleGrantedAuthority::new)
-                            .toList();
-                    principal = userDetails;
-                    // DB 권한이 있으면 교체, 없으면 JWT 권한 유지
-                    if (!mergedAuth.isEmpty()) {
-                        authorities = mergedAuth;
+                    Long userId = parseUserId(jwtUtil.getSubject(accessToken));
+                    String accessJti = jwtUtil.getJti(accessToken);
+
+                    var sessOpt = sessionRepo.findByUser_Id(userId);
+                    if (sessOpt.isPresent()) {
+                        var sess = sessOpt.get();
+                        if (sess.isActive()
+                                && accessJti.equals(sess.getAccessJti())
+                                && sess.getAccessExpireAt().isAfter(LocalDateTime.now())) {
+                            setAuthenticationFromToken(accessToken, request);
+                            chain.doFilter(request, response);
+                            return;
+                        }
                     }
-                } catch (Exception ignore) { /* 보강 실패는 OK */ }
-
-                // Authentication 생성/주입 (권한 컬렉션은 null 금지)
-                var authentication =
-                        new UsernamePasswordAuthenticationToken(principal, null, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                System.out.println("🛡️ 부여 권한: " + authorities);
-
-            } catch (Exception e) {
-                System.out.println("❌ JWT 인증 처리 실패: " + e.getMessage());
-                e.printStackTrace();
+                } catch (ExpiredJwtException e) {
+                    // access 만료 → refresh로 시도
+                } catch (JwtException | IllegalArgumentException e) {
+                    // 서명/형식 이상 → refresh로 시도
+                }
             }
+
+            // 2) Refresh 검증 / 회전
+            if (needSet && refreshToken != null) {
+                try {
+                    Long userId = parseUserId(jwtUtil.getSubject(refreshToken));
+                    String refreshJti = jwtUtil.getJti(refreshToken);
+
+                    var newAccessOpt = rotationService.rotateIfValid(userId, refreshJti, response, cookieUtil);
+                    if (newAccessOpt.isPresent()) {
+                        setAuthenticationFromToken(newAccessOpt.get(), request);
+                        chain.doFilter(request, response);
+                        return;
+                    } else {
+                        // 회전 실패(만료/불일치) → 쿠키 삭제 + 401
+                        clearAndReject(response);
+                        return;
+                    }
+                } catch (ExpiredJwtException e) {
+                    // 파싱 단계에서 이미 만료 → 쿠키 삭제 + 401
+                    clearAndReject(response); return;
+                } catch (JwtException | IllegalArgumentException e) {
+                    clearAndReject(response); return;
+                }
+            }
+
+            // 3) 실패
+            clearAndReject(response);
         }
 
-        filterChain.doFilter(request, response);
+        private Long parseUserId(String subject) { return Long.valueOf(subject); }
+
+        private String extractAccessToken(HttpServletRequest request) {
+            String bearer = request.getHeader("Authorization");
+            if (bearer != null && bearer.startsWith("Bearer ")) return bearer.substring(7);
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("accessToken".equals(cookie.getName())) return cookie.getValue();
+                }
+            }
+            return null;
+        }
+
+        private String extractRefreshToken(HttpServletRequest request) {
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("refreshToken".equals(cookie.getName())) return cookie.getValue();
+                }
+            }
+            return null;
+        }
+
+        private void setAuthenticationFromToken(String token, HttpServletRequest request) {
+            String principalId = jwtUtil.getSubject(token);
+            List<String> roles = jwtUtil.getRoles(token);
+            var authorities = roles.stream()
+                    .map(r -> r.toUpperCase(Locale.ROOT))
+                    .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                    .distinct()
+                    .map(SimpleGrantedAuthority::new).toList();
+
+            var principalFromJwt = new org.springframework.security.core.userdetails.User(principalId, "", authorities);
+            Object principal = principalFromJwt;
+
+            try {
+                var userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(principalId);
+                var merged = userDetails.getAuthorities().stream()
+                        .map(a -> a.getAuthority())
+                        .map(s -> s.toUpperCase(Locale.ROOT))
+                        .map(s -> s.startsWith("ROLE_") ? s : "ROLE_" + s)
+                        .distinct()
+                        .map(SimpleGrantedAuthority::new).toList();
+                if (!merged.isEmpty()) authorities = merged;
+                principal = userDetails;
+            } catch (Exception ignore) { }
+
+            var authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+
+        private void clearAndReject(HttpServletResponse res) throws IOException {
+            cookieUtil.clearJwtCookie(res, "accessToken", false);
+            cookieUtil.clearJwtCookie(res, "refreshToken", false);
+            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            res.setContentType("application/json;charset=UTF-8");
+            res.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"세션이 유효하지 않습니다.\"}");
+        }
+
+        @Override
+        protected boolean shouldNotFilter(HttpServletRequest request) {
+            String path = request.getRequestURI();
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true; // CORS preflight
+            return path.startsWith("/swagger")
+                    || path.startsWith("/v3/api-docs")
+                    || path.startsWith("/swagger-ui")
+                    || path.startsWith("/actuator")
+                    || path.equals("/error")
+                    || path.equals("/api/users/login")
+                    || path.equals("/api/users/signup")
+                    || path.equals("/api/users/logout");
+        }
+
+        @Override protected boolean shouldNotFilterAsyncDispatch() { return false; }
+        @Override protected boolean shouldNotFilterErrorDispatch() { return false; }
     }
-
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-
-        return path.startsWith("/swagger")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-ui")
-                || path.equals("/api/users/login")
-                || path.equals("/api/users/signup")
-                || path.equals("/api/users/logout");  // ✅ "/api/auth/me" 절대 금지!
-    }
-
-    @Override
-    protected boolean shouldNotFilterAsyncDispatch() {
-        // 기본값(true) → async 디스패치 시 필터를 건너뜀
-        // false로 바꿔서 async 디스패치에도 JWT 재적용
-        return false;
-    }
-
-    @Override
-    protected boolean shouldNotFilterErrorDispatch() {
-        // 에러 디스패치에도 JWT 적용(에러 핸들러 경로 접근 시 컨텍스트 보존)
-        return false;
-    }
-
-}
