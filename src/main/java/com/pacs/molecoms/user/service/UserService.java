@@ -72,8 +72,8 @@ public class UserService {
     }
 
     @Transactional
-    public UserRes update(Long id, UserUpdateReq req) {
-        User u = userRepository.findById(id)
+    public UserRes update(String email, UserUpdateReq req) {
+        User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
         u.setDisplayName(req.displayName());
         u.setDept(req.dept());
