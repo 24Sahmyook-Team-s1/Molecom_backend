@@ -83,6 +83,14 @@ public class UserService {
     }
 
     @Transactional
+    public UserRes updatePassword(LoginReq req) {
+        User u = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+        u.setPassword(passwordEncoder.encode(req.getPassword()));
+        return toRes(u);
+    }
+
+    @Transactional
     public Long deleteSoft(String email) {
         User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));

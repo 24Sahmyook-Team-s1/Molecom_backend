@@ -123,6 +123,18 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "유저 비밀번호 변경")
+    @PutMapping("/pw")
+    public ResponseEntity<UserRes> updatePassword(@Valid @RequestBody LoginReq req, HttpServletRequest request) {
+        UserRes res = userService.updatePassword(req);
+
+        User actor = getActor(request);
+        Long id = userRepository.findByEmail(req.getEmail()).orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"target_userID 없음")).getId();
+        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.UPDATE);
+        return ResponseEntity.ok(res);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 삭제(소프트)")
     @DeleteMapping("/{email}")
     public ResponseEntity<Void> deleteSoft(@PathVariable String email, HttpServletRequest request) {
