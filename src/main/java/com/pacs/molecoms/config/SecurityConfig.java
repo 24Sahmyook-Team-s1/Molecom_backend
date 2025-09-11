@@ -1,8 +1,15 @@
 // src/main/java/com/pacs/molecoms/config/SecurityConfig.java
 package com.pacs.molecoms.config;
 
+import com.pacs.molecoms.mysql.repository.AuthSessionRepository;
+import com.pacs.molecoms.security.CookieUtil;
 import com.pacs.molecoms.security.JwtAuthFilter;
+import com.pacs.molecoms.security.JwtSessionGuardFilter;
+import com.pacs.molecoms.security.JwtUtil;
+import com.pacs.molecoms.user.service.SessionRotationService;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,28 +27,43 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.*;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class SecurityConfig {
+
+    private final AuthSessionRepository sessionRepo;
+    private final CookieUtil cookieUtil;
+    private final JwtUtil jwtUtil;
+    private final SessionRotationService sessionRotationService;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
     };
     private static final String[] PUBLIC_WHITELIST = {
-            "/actuator/health", "/actuator/info", "/error", "/api/users/login", "/api/users/logout"
-            // 필요 시 로그인/회원가입 API 추가: "/api/auth/**"
+            "/actuator/health", "/actuator/info", "/error",
+            "/api/users/login", "/api/users/logout", "/api/users/signup"
     };
 
     @Value("#{'${jwt.security.cors.allowed-origins}'.split(',')}")
     private List<String> allowedOrigins;
 
+    /** 세션 일치/회전 가드 필터 Bean */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
+    public JwtSessionGuardFilter jwtSessionGuardFilter() {
+        return new JwtSessionGuardFilter(sessionRepo, sessionRotationService, jwtUtil, cookieUtil);
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthFilter jwtAuthFilter,          // @Component 등록 가정
                                            AuthenticationEntryPoint entryPoint,
                                            AccessDeniedHandler accessDeniedHandler) throws Exception {
 
@@ -55,18 +77,20 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
-
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
+                .addFilterBefore(jwtSessionGuardFilter(), JwtAuthFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
@@ -77,10 +101,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(allowedOrigins);
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Cookie"));
         cfg.setExposedHeaders(List.of("Authorization"));
-        cfg.setAllowCredentials(true);
+        cfg.setAllowCredentials(true); // 쿠키 사용 시 필수 (allowedOrigins는 와일드카드 불가)
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
