@@ -108,8 +108,7 @@ public class UserService {
 //    }
 
     private UserRes toRes(User u) {
-        return new UserRes(
-                u.getId(), u.getEmail(), u.getDisplayName(), u.getDept(),
+        return new UserRes( u.getEmail(), u.getDisplayName(), u.getDept(),
                 u.getRole(), u.getStatus(), u.getCreatedAt()
         );
     }

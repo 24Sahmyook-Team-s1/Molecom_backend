@@ -70,8 +70,9 @@ public class UserController {
     public ResponseEntity<UserRes> create(@Valid @RequestBody UserCreateReq req, HttpServletRequest request) {
         UserRes created = userService.create(req);
         // actor: 관리자 / target: 방금 생성된 사용자
+        User target = userRepository.findByEmail(created.email()).orElseThrow(()->new MolecomsException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다."));
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), created.id(), DBlist.USERS, UserLogAction.CREATE);
+        logService.saveLog(actor.getId(), target.getId(), DBlist.USERS, UserLogAction.CREATE);
         return ResponseEntity.ok(created);
     }
 
@@ -180,8 +181,9 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserRes> me(HttpServletRequest request) {
         UserRes me = userService.meFromRequest(request);
+        User target = userRepository.findByEmail(me.email()).orElseThrow(()->new MolecomsException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다."));
         // 자기 자신 조회: actor = target = me.id
-        logService.saveLog(me.id(), DBlist.USERS, UserLogAction.READ);
+        logService.saveLog(target, DBlist.USERS, UserLogAction.READ);
         return ResponseEntity.ok(me);
     }
 
