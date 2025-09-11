@@ -112,14 +112,15 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN') or @self.isSelf(#id, authentication)")
     @Operation(summary = "유저 수정")
-    @PutMapping("/{id}")
-    public ResponseEntity<UserRes> update(@PathVariable Long id,
+    @PutMapping("/{email}")
+    public ResponseEntity<UserRes> update(@PathVariable String email,
                                           @Valid @RequestBody UserUpdateReq req,
                                           HttpServletRequest request) {
-        UserRes res = userService.update(id, req);
+        UserRes res = userService.update(email, req);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.UPDATE);
+        User  target = userRepository.findByEmail(email).orElseThrow(() ->new MolecomsException(ErrorCode.USER_NOT_FOUND, "해당 이메일이 존재하지 않습니다."));
+        logService.saveLog(actor.getId(), target.getId(), DBlist.USERS, UserLogAction.UPDATE);
         return ResponseEntity.ok(res);
     }
 

@@ -80,8 +80,7 @@ import java.util.*;
                     || path.startsWith("/v3/api-docs")
                     || path.startsWith("/swagger-ui")
                     || path.equals("/api/users/login")
-                    || path.equals("/api/users/signup")
-                    || path.equals("/api/users/logout");  // ✅ "/api/auth/me" 절대 금지!
+                    || path.equals("/api/users/signup");
         }
 
 
