@@ -31,11 +31,11 @@ public class ReportLog {
 
     // ✅ 액션 종류 (생성/조회/수정/삭제)
     @Enumerated(EnumType.STRING)
-    @Column(name = "action", nullable = false, length = 20)
+    @Column(name = "logAction", nullable = false, length = 20)
     private ReportAction action;
 
     // ✅ 부가 설명
-    @Column(name = "detail", length = 200)
+    @Column(name = "content", length = 200)
     private String detail;
 
     @CreationTimestamp

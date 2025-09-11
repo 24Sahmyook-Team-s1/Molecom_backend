@@ -4,8 +4,8 @@ import com.pacs.molecoms.mysql.entity.ReportAction;
 import java.time.LocalDateTime;
 
 public record ReportLogRes(
-        String actorEmail,
-        ReportAction action,
-        String detail,
+        String actor,
+        ReportAction logAction,
+        String content,
         LocalDateTime createdAt
 ) {}

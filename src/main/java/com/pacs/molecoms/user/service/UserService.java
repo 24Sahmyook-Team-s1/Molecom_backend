@@ -3,12 +3,11 @@ package com.pacs.molecoms.user.service;
 import com.pacs.molecoms.exception.ErrorCode;
 import com.pacs.molecoms.exception.MolecomsException;
 import com.pacs.molecoms.mysql.entity.*;
-import com.pacs.molecoms.mysql.repository.SessionRepository;
+import com.pacs.molecoms.mysql.repository.AuthSessionRepository;
 import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
 import com.pacs.molecoms.security.JwtUtil;
 import com.pacs.molecoms.user.dto.*;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,12 +20,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final SessionRepository sessionRepository;
+    private final AuthSessionRepository sessionRepository;
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final PasswordEncoder passwordEncoder;
@@ -50,8 +50,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserRes> list(UserStatus status, Pageable pageable) {
+//        Page<User> page = (status == null)
+//                ? userRepository.findAll(pageable)
+//                : userRepository.findAllByStatus(status, pageable);
         Page<User> page = (status == null)
-                ? userRepository.findAll(pageable)
+                ? page = userRepository.findAllByStatusIn(List.of(UserStatus.ACTIVE, UserStatus.INACTIVE), pageable)
                 : userRepository.findAllByStatus(status, pageable);
         return page.map(this::toRes);
     }
@@ -79,70 +82,35 @@ public class UserService {
         return toRes(u);
     }
 
-//    @Transactional
-//    public void deleteSoft(Long id) {
-//        User u = userRepository.findById(id)
-//                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-//        u.setStatus(UserStatus.DELETED);
-//    }
+    @Transactional
+    public UserRes updatePassword(LoginReq req) {
+        User u = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+        u.setPassword(passwordEncoder.encode(req.getPassword()));
+        return toRes(u);
+    }
 
     @Transactional
-    public Long deleteHard(String email) {
+    public Long deleteSoft(String email) {
         User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-        userRepository.delete(u);
+        u.setStatus(UserStatus.DELETED);
+        u.setEmail(email + "_" + u.getId());
         return u.getId();
     }
 
+//    @Transactional
+//    public Long deleteHard(String email) {
+//        User u = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+//        userRepository.delete(u);
+//        return u.getId();
+//    }
+
     private UserRes toRes(User u) {
-        return new UserRes(
-                u.getId(), u.getEmail(), u.getDisplayName(), u.getDept(),
+        return new UserRes( u.getEmail(), u.getDisplayName(), u.getDept(),
                 u.getRole(), u.getStatus(), u.getCreatedAt()
         );
-    }
-
-    //로그인
-    public AuthRes login(LoginReq request, HttpServletResponse response) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND,"해당 이메일이 존재하지 않습니다."));
-
-        // 비밀번호 확인
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new MolecomsException(ErrorCode.PASSWORD_FAIL);
-        }
-
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        AuthRes authResponse=  new AuthRes(accessToken, refreshToken);
-        cookieUtil.addJwtCookie(response, "accessToken", authResponse.getAccessToken(), false);
-        cookieUtil.addJwtCookie(response, "refreshToken", authResponse.getRefreshToken(), false);
-
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtUtil.getACCESS_EXPIRATION());
-
-        Session s = sessionRepository.findByUserId(user.getId()).orElse(Session.builder().user(user).build());
-//        Session s = Session.builder()
-//                .user_id(3L)
-//                .jwt_token(accessToken)
-//                .issued_at(now)
-//                .expires_at(expiry)
-//                .build();
-        s.setAccessToken(accessToken);
-        s.setIssued_at(now);
-        s.setExpires_at(expiry);
-
-        sessionRepository.save(s);
-        createDeleteEvent();
-        return authResponse;
-    }
-
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        Session s = sessionRepository.findByAccessToken(cookieUtil.getTokenFromCookie(request, "accessToken"));
-        System.out.println("시이이ㅣ이이팔  " + cookieUtil.getTokenFromCookie(request, "accessToken"));
-        sessionRepository.delete(s);
-        cookieUtil.clearJwtCookie(response, "accessToken", false);
-        cookieUtil.clearJwtCookie(response, "refreshToken", false);
     }
 
     public UserRes meFromRequest(HttpServletRequest request) {
@@ -151,7 +119,7 @@ public class UserService {
             throw new MolecomsException(ErrorCode.UNAUTHORIZED, "accessToken이 없습니다.");
         }
 
-        String uidStr = jwtUtil.getUserIdFromToken(token);
+        String uidStr = jwtUtil.getEmail(token);
         if (uidStr == null || uidStr.isBlank()) {
             throw new MolecomsException(ErrorCode.UNAUTHORIZED, "토큰에 email가 없습니다.");
         }
