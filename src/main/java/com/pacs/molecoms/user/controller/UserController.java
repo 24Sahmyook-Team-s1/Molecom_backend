@@ -122,27 +122,27 @@ public class UserController {
         return ResponseEntity.ok(res);
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
-//    @Operation(summary = "유저 삭제(소프트)")
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<Void> deleteSoft(@PathVariable Long id, HttpServletRequest request) {
-//        service.deleteSoft(id);
-//
-//        User actor = getActor(request);
-//        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.DELETE);
-//        return ResponseEntity.noContent().build();
-//    }
-
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "유저 삭제(하드)")
-    @DeleteMapping("/{email}/hard")
-    public ResponseEntity<Void> deleteHard(@PathVariable String email, HttpServletRequest request) {
-        Long deletedid = userService.deleteHard(email);
+    @Operation(summary = "유저 삭제(소프트)")
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> deleteSoft(@PathVariable String email, HttpServletRequest request) {
+        Long id = userService.deleteSoft(email);
 
         User actor = getActor(request);
-        logService.saveLog(actor.getId(), deletedid, DBlist.USERS, UserLogAction.HARD_DELETE);
+        logService.saveLog(actor.getId(), id, DBlist.USERS, UserLogAction.DELETE);
         return ResponseEntity.noContent().build();
     }
+
+//    @PreAuthorize("hasRole('ADMIN')")
+//    @Operation(summary = "유저 삭제(하드)")
+//    @DeleteMapping("/{email}/hard")
+//    public ResponseEntity<Void> deleteHard(@PathVariable String email, HttpServletRequest request) {
+//        Long deletedid = userService.deleteHard(email);
+//
+//        User actor = getActor(request);
+//        logService.saveLog(actor.getId(), deletedid, DBlist.USERS, UserLogAction.HARD_DELETE);
+//        return ResponseEntity.noContent().build();
+//    }
 
     @Operation(summary = "로그인")
     @PostMapping("/login")

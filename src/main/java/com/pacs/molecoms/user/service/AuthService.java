@@ -5,6 +5,7 @@ import com.pacs.molecoms.exception.ErrorCode;
 import com.pacs.molecoms.exception.MolecomsException;
 import com.pacs.molecoms.mysql.entity.AuthSession;
 import com.pacs.molecoms.mysql.entity.User;
+import com.pacs.molecoms.mysql.entity.UserStatus;
 import com.pacs.molecoms.mysql.repository.AuthSessionRepository;
 import com.pacs.molecoms.mysql.repository.UserRepository;
 import com.pacs.molecoms.security.CookieUtil;
@@ -38,6 +39,10 @@ public class AuthService {
                 .orElseThrow(() -> new MolecomsException(ErrorCode.USER_NOT_FOUND, "해당 이메일이 존재하지 않습니다."));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new MolecomsException(ErrorCode.PASSWORD_FAIL);
+        }
+        // 로그인 압수
+        if (user.getStatus().equals(UserStatus.INACTIVE)) {
+            throw new MolecomsException(ErrorCode.FORBIDDEN, "해당 계정은 사용 불가능합니다.");
         }
 
         Long userId = user.getId();

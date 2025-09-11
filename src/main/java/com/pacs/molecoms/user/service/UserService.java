@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +50,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserRes> list(UserStatus status, Pageable pageable) {
+//        Page<User> page = (status == null)
+//                ? userRepository.findAll(pageable)
+//                : userRepository.findAllByStatus(status, pageable);
         Page<User> page = (status == null)
-                ? userRepository.findAll(pageable)
+                ? page = userRepository.findAllByStatusIn(List.of(UserStatus.ACTIVE, UserStatus.INACTIVE), pageable)
                 : userRepository.findAllByStatus(status, pageable);
         return page.map(this::toRes);
     }
@@ -78,20 +82,22 @@ public class UserService {
         return toRes(u);
     }
 
-//    @Transactional
-//    public void deleteSoft(Long id) {
-//        User u = userRepository.findById(id)
-//                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-//        u.setStatus(UserStatus.DELETED);
-//    }
-
     @Transactional
-    public Long deleteHard(String email) {
+    public Long deleteSoft(String email) {
         User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
-        userRepository.delete(u);
+        u.setStatus(UserStatus.DELETED);
+        u.setEmail(email + "_" + u.getId());
         return u.getId();
     }
+
+//    @Transactional
+//    public Long deleteHard(String email) {
+//        User u = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new EntityNotFoundException("유저를 찾을 수 없습니다."));
+//        userRepository.delete(u);
+//        return u.getId();
+//    }
 
     private UserRes toRes(User u) {
         return new UserRes(
