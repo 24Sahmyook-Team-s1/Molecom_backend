@@ -111,6 +111,11 @@ public class UserService {
             throw new MolecomsException(ErrorCode.PASSWORD_FAIL);
         }
 
+        // 로그인 압수
+        if (!user.getStatus().equals(UserStatus.ACTIVE)) {
+            throw new MolecomsException(ErrorCode.FORBIDDEN, "해당 계정은 사용 불가능합니다.");
+        }
+
         String accessToken = jwtUtil.generateAccessToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);
 
