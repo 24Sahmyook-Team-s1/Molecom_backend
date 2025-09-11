@@ -55,7 +55,6 @@ public class SecurityConfig {
     @Value("#{'${jwt.security.cors.allowed-origins}'.split(',')}")
     private List<String> allowedOrigins;
 
-    /** 세션 일치/회전 가드 필터 Bean */
     @Bean
     public JwtSessionGuardFilter jwtSessionGuardFilter() {
         return new JwtSessionGuardFilter(sessionRepo, sessionRotationService, jwtUtil, cookieUtil);
@@ -63,7 +62,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           JwtAuthFilter jwtAuthFilter,          // @Component 등록 가정
+                                           JwtAuthFilter jwtAuthFilter,             // @Component
                                            AuthenticationEntryPoint entryPoint,
                                            AccessDeniedHandler accessDeniedHandler) throws Exception {
 
@@ -81,16 +80,17 @@ public class SecurityConfig {
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
-                .addFilterBefore(jwtSessionGuardFilter(), JwtAuthFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+                // ✅ 둘 다 내장 필터(UsernamePasswordAuthenticationFilter) 앞에 추가
+                //    추가 순서 = 실행 순서 이므로, 가드를 먼저 추가하고, 그 다음 인증 필터 추가
+                .addFilterBefore(jwtSessionGuardFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthFilter,          UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
@@ -101,10 +101,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(allowedOrigins);
-        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Cookie"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Cookie"));
         cfg.setExposedHeaders(List.of("Authorization"));
-        cfg.setAllowCredentials(true); // 쿠키 사용 시 필수 (allowedOrigins는 와일드카드 불가)
+        cfg.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
