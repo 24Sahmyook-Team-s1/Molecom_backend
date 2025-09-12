@@ -123,6 +123,9 @@
 ---
 
 ## 5) 보안/세션 관리
+JWT + 세션 하이브리드
+본 시스템은 브라우저에서는 HttpOnly 쿠키 기반의 JWT를 사용하되, **MySQL authsessiontab**에 세션 상태를 기록하여 단일 세션 강제, 즉시 무효화, 감사 추적을 제공합니다. 게이트웨이는 쿠키에서 Access Token을 추출해 Authorization 헤더로 브릿지하고, JWKS 기반 서명 검증을 수행하여 표준 방식으로 토큰을 검증합니다. 백엔드는 토큰 클레임(sub/sid/roles)을 검증한 뒤 세션 테이블과 매칭하여 탈취/중복 로그인을 차단하고, Refresh 회전은 행 락(PESSIMISTIC_WRITE) 으로 중복 발급을 방지합니다. 이 구조는 순수 서버 세션 대비 게이트웨이·프록시·서드파티와의 표준 토큰 연동성을 확보하면서도, 순수 JWT 대비 세션 레벨 통제를 강화하여 의료 도메인의 보안·컴플라이언스 요구를 만족합니다.
+
 - **JWT**: Access(짧게) + Refresh(길게), 쿠키 기반
 - **JwtSessionGuardFilter**: Access 만료 시 Refresh로 무중단 갱신
 - **SessionRotationService**: DB PESSIMISTIC_WRITE 기반 단일 세션 강제
