@@ -131,8 +131,7 @@ JWT + 세션 하이브리드
 - **SessionRotationService**: DB PESSIMISTIC_WRITE 기반 단일 세션 강제
 - **RBAC**: 최소 권한
 - **로그 정책**
-    - 모든 열람에 `reasonCode` 필수 (`TREATMENT`, `CONSULT`, `QA` 등)
-    - 로그는 MySQL + Append-only 파일 이중 보관
+    - 로그는 MySQL DB에 직접 저장
 - **법령 준수**
     - MySQL에는 UID만 보관 (PHI 최소화)
     - 로그 6개월 이상 보존 (ELK 연동 가능)
