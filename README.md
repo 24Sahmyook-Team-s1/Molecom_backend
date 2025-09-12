@@ -14,7 +14,6 @@
     - 리포트 업서트, 템플릿/버전 관리
     - 협업 노트/검토 요청
     - DICOM Range 스트리밍 (CIFS/NAS)
-    - AI 오버레이 마킹
     - **Silent Refresh & Session Rotation** (단일 세션 강제 + 무중단 인증 연장)
 
 ---
