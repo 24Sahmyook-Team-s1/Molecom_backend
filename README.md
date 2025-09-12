@@ -9,13 +9,13 @@
 ## 1) 시스템 개요
 - **목표**: RAD/MD/TECH/ADMIN/AUDITOR가 안전하게 의료 영상을 열람·판독·협업·리포트할 수 있는 웹 환경 제공
 - **주요 기능**
-  - 환자·스터디 검색 (Oracle UID 기반 LIKE)
-  - 시리즈/이미지 썸네일 뷰어 (OHIF 연동)
-  - 리포트 업서트, 템플릿/버전 관리
-  - 협업 노트/검토 요청
-  - DICOM Range 스트리밍 (CIFS/NAS)
-  - AI 오버레이 마킹
-  - **Silent Refresh & Session Rotation** (단일 세션 강제 + 무중단 인증 연장)
+    - 환자·스터디 검색 (Oracle UID 기반 LIKE)
+    - 시리즈/이미지 썸네일 뷰어 (OHIF 연동)
+    - 리포트 업서트, 템플릿/버전 관리
+    - 협업 노트/검토 요청
+    - DICOM Range 스트리밍 (CIFS/NAS)
+    - AI 오버레이 마킹
+    - **Silent Refresh & Session Rotation** (단일 세션 강제 + 무중단 인증 연장)
 
 ---
 
@@ -39,36 +39,85 @@
 ## 3) 데이터베이스 스키마
 
 ### 🔹 Oracle (PACS 메타, Read-only)
-- **patienttab**: 환자 정보  
-- **studytab**: 스터디 메타 (studykey, studyinsuid, modality 등)  
-- **seriestab**: 시리즈 메타 (serieskey, seriesinsuid, desc 등)  
-- **imagetab**: 이미지 메타 (sopinstanceuid, path, fname 등)  
+- **patienttab**: 환자 정보
+- **studytab**: 스터디 메타 (studykey, studyinsuid, modality 등)
+- **seriestab**: 시리즈 메타 (serieskey, seriesinsuid, desc 등)
+- **imagetab**: 이미지 메타 (sopinstanceuid, path, fname 등)
 
 ---
 
 ### 🔹 MySQL (App/Auth/Logs)
-| Table          | 설명 |
-|----------------|------|
-| **users**      | 사용자 계정 (이메일, 부서, 역할, 상태 `ACTIVE/INACTIVE/DELETED`) |
-| **auth_session** | JWT 세션 (Access/Refresh, 만료, UserAgent, IP) |
-| **report**     | 판독 리포트 (studyKey FK, findings, impression 등) |
-| **report_logs**| 리포트 변경/열람 로그 |
-| **user_logs**  | 사용자 활동 로그 (로그인, 수정, 권한 변경 등) |
-| **dicom_logs** | DICOM 접근 로그 (스터디/시리즈/이미지 열람 기록) |
+
+#### `auth_session`
+- **id** (bigint, PK)
+- **user_id** (bigint)
+- **session_id** (varchar(36))
+- **active** (bit(1))
+- **access_expire_at** (datetime(6))
+- **refresh_expire_at** (datetime(6))
+- **access_jti** (varchar(36))
+- **refresh_jti** (varchar(36))
+- **revoked_at** (datetime(6), nullable)
+- **revoked_reason** (varchar(32), nullable)
+- **created_at** (datetime(6))
+- **updated_at** (datetime(6))
+
+#### `dicom_logs`
+- **id** (bigint, PK)
+- **actor_id** (bigint)
+- **action** (enum('OPEN_FILE','OPEN_IMAGE','OPEN_SERIES','OPEN_STUDY'))
+- **target_uid** (varchar(128))
+- **created_at** (datetime(6))
+
+#### `report`
+- **id** (bigint, PK)
+- **study_key** (bigint)
+- **author_id** (bigint)
+- **content** (text)
+- **created_at** (datetime(6))
+- **updated_at** (datetime(6))
+
+#### `report_logs`
+- **id** (bigint, PK)
+- **report_id** (bigint)
+- **user_id** (bigint)
+- **action** (enum('CREATE','DELETE','UPDATE','VIEW'))
+- **log_action** (enum('CREATE','DELETE','UPDATE','VIEW'))
+- **content** (varchar(200))
+- **created_at** (datetime(6))
+
+#### `user_logs`
+- **id** (bigint, PK)
+- **actor_id** (bigint)
+- **target_id** (bigint)
+- **db** (enum('AUTH_SESSION','LOGS','USERS'))
+- **log_action** (enum('CREATE','DELETE','HARD_DELETE','LOGIN','LOGOUT','READ','READ_LIST','UPDATE'))
+- **user_log_action** (enum('CREATE','DELETE','HARD_DELETE','LOGIN','LOGOUT','READ','READ_LIST','UPDATE'))
+- **created_at** (datetime(6))
+
+#### `users`
+- **id** (bigint, PK)
+- **email** (varchar(255), UNIQUE)
+- **password** (varchar(255))
+- **display_name** (varchar(100))
+- **dept** (varchar(100))
+- **role** (enum('ADMIN','DOCTOR','GUEST','NURSE','STAFF'))
+- **status** (enum('ACTIVE','DELETED','INACTIVE','LOCKED','SUSPENDED'))
+- **created_at** (datetime(6))
 
 ---
 
 ## 4) 유저 삭제 정책 (Soft Delete by `status`)
 - 물리 삭제 금지 → `users.status` 컬럼으로 논리 삭제 처리
 - 상태 값
-  - `ACTIVE`: 정상
-  - `INACTIVE`: 비활성화(로그인 불가, 복구 가능)
-  - `DELETED`: 삭제(접근 불가, 로그만 유지)
+    - `ACTIVE`: 정상
+    - `INACTIVE`: 비활성화(로그인 불가, 복구 가능)
+    - `DELETED`: 삭제(접근 불가, 로그만 유지)
 - API 동작
-  - `DELETE /api/users/{email}` → `status='DELETED'`, `deleted_at=NOW()`
-  - 모든 세션(`auth_session`) 무효화
-  - `user_logs` 에 `USER_DELETE` 기록
-- 조회 API는 기본적으로 `status != 'DELETED'`만 반환  
+    - `DELETE /api/users/{email}` → `status='DELETED'`, `deleted_at=NOW()`
+    - 모든 세션(`auth_session`) 무효화
+    - `user_logs` 에 `USER_DELETE` 기록
+- 조회 API는 기본적으로 `status != 'DELETED'`만 반환
 - 관리자 API에서 `INACTIVE` ↔ `ACTIVE` 전환 가능
 
 ---
@@ -79,11 +128,11 @@
 - **SessionRotationService**: DB PESSIMISTIC_WRITE 기반 단일 세션 강제
 - **RBAC**: 최소 권한
 - **로그 정책**
-  - 모든 열람에 `reasonCode` 필수 (`TREATMENT`, `CONSULT`, `QA` 등)
-  - 로그는 MySQL + Append-only 파일 이중 보관
+    - 모든 열람에 `reasonCode` 필수 (`TREATMENT`, `CONSULT`, `QA` 등)
+    - 로그는 MySQL + Append-only 파일 이중 보관
 - **법령 준수**
-  - MySQL에는 UID만 보관 (PHI 최소화)
-  - 로그 6개월 이상 보존 (ELK 연동 가능)
+    - MySQL에는 UID만 보관 (PHI 최소화)
+    - 로그 6개월 이상 보존 (ELK 연동 가능)
 
 ---
 
@@ -105,9 +154,9 @@
 - `PUT /api/reports/studies/{studyKey}` – 리포트 업서트
 
 ### 📊 LogController
-- `GET /api/users/logAll`  
-- `GET /api/reports/logAll`  
-- `GET /api/dicom/logAll`  
+- `GET /api/users/logAll`
+- `GET /api/reports/logAll`
+- `GET /api/dicom/logAll`
 - `GET /api/combined`
 
 ### 🔎 DicomQueryController
@@ -123,8 +172,8 @@
 ## 7) 운영/예외 처리
 - **LazyInitializationException 방지**: DTO 변환을 서비스 계층 트랜잭션 내 처리
 - **전역 예외 처리**
-  - `MolecomsException` → ErrorCode 매핑
-  - `Exception` → INTERNAL_ERROR 안전망
+    - `MolecomsException` → ErrorCode 매핑
+    - `Exception` → INTERNAL_ERROR 안전망
 - **모니터링**: DB 풀, CIFS 지연, 인증 실패 급증
 - **DR 구성**: MySQL 복제 + Oracle Data Guard 고려
 
